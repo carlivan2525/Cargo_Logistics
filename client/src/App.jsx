@@ -4,15 +4,18 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 
 function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => localStorage.getItem('user'));
   const navigate = useNavigate();
 
   const handleLogin = (username) => {
+    localStorage.setItem('user', username);
     setUser(username);
     navigate('/dashboard');
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
     setUser(null);
     navigate('/login');
   };

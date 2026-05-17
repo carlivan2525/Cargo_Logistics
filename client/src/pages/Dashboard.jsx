@@ -1,11 +1,20 @@
 import { useState } from 'react';
 import {
   LayoutDashboard, ShoppingCart, Truck, MapPin, FileText,
-  ArrowUpDown, Database, Globe, BarChart2, Settings,
+  ArrowUpDown, Database, Globe, BarChart2, Settings as SettingsIcon,
   Search, Bell, RefreshCw, Send, MoreHorizontal,
   LogOut, CheckCircle2, AlertTriangle, Package, FileCheck
 } from 'lucide-react';
 import logo from '../assets/CarGO-logo.png';
+import ShipmentsTable from './Shipments';
+import Tracking from './Tracking';
+import Orders from './Orders';
+import Invoices from './Invoices';
+import Transmissions from './Transmissions';
+import EdiLogs from './EdiLogs';
+import Partners from './Partners';
+import Reports from './Reports';
+import Settings from './Settings';
 
 const navSections = [
   {
@@ -30,7 +39,7 @@ const navSections = [
     title: 'SYSTEM',
     items: [
       { icon: BarChart2, label: 'Reports' },
-      { icon: Settings,  label: 'Settings' },
+      { icon: SettingsIcon,  label: 'Settings' },
     ],
   },
 ];
@@ -43,17 +52,15 @@ const statCards = [
 ];
 
 const shipments = [
-  { id: 'SHP-0516-001', route: 'Manila → Cebu',     company: 'RetailCo PH', status: 'In transit',      statusColor: 'bg-blue-500/20 text-blue-400' },
-  { id: 'SHP-0516-002', route: 'Batangas → Davao',  company: 'SupplyMax',   status: 'Out for delivery', statusColor: 'bg-orange-500/20 text-orange-400' },
-  { id: 'SHP-0516-003', route: 'Laguna → QC',       company: 'MFG Direct',  status: 'Delivered',        statusColor: 'bg-green-500/20 text-green-400' },
-  { id: 'SHP-0516-004', route: 'Cebu → Manila',     company: 'FastFreight', status: 'In transit',       statusColor: 'bg-blue-500/20 text-blue-400' },
+  { id: 'SHP-0516-001', route: 'Manila → Cebu',    company: 'RetailCo PH', status: 'In transit',      statusColor: 'bg-blue-500/20 text-blue-400' },
+  { id: 'SHP-0516-002', route: 'Batangas → Davao', company: 'SupplyMax',   status: 'Out for delivery', statusColor: 'bg-orange-500/20 text-orange-400' },
+  { id: 'SHP-0516-003', route: 'Laguna → QC',      company: 'MFG Direct',  status: 'Delivered',        statusColor: 'bg-green-500/20 text-green-400' },
 ];
 
 const ediPipeline = [
-  { code: '204', label: 'Load tender', dir: 'OUT', desc: 'Sent to RetailCo PH',      time: '09:14' },
-  { code: '990', label: 'LT response', dir: 'IN',  desc: 'Load accepted',             time: '09:18' },
-  { code: '856', label: 'Ship notice', dir: 'OUT', desc: 'Shipment details sent',     time: '10:02' },
-  { code: '214', label: 'Status update',dir: 'IN', desc: 'In transit confirmed',      time: '10:45' },
+  { code: '204', label: 'Load tender', dir: 'OUT', desc: 'Sent to RetailCo PH',  time: '09:14' },
+  { code: '990', label: 'LT response', dir: 'IN',  desc: 'Load accepted',         time: '09:18' },
+  { code: '856', label: 'Ship notice', dir: 'OUT', desc: 'Shipment details sent', time: '10:02' },
 ];
 
 function Dashboard({ user, onLogout }) {
@@ -120,35 +127,45 @@ function Dashboard({ user, onLogout }) {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Topbar */}
-        <header className="flex items-center justify-between px-6 py-3 border-b border-white/10 bg-[#13151f]">
-          <h1 className="text-base font-semibold">Dashboard</h1>
+        <header className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-[#13151f]">
+          <h1 className="text-sm font-semibold">{activeNav}</h1>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 bg-white/8 border border-white/10 rounded-lg px-3 py-1.5">
-              <Search size={13} className="text-gray-500" />
+            <div className="flex items-center gap-2 bg-white/8 border border-white/10 rounded-lg px-2.5 py-1">
+              <Search size={12} className="text-gray-500" />
               <input
                 type="text"
                 placeholder="Search shipments..."
-                className="bg-transparent text-sm text-gray-300 placeholder-gray-500 outline-none w-44"
+                className="bg-transparent text-xs text-gray-300 placeholder-gray-500 outline-none w-36"
               />
             </div>
-            <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/8 border border-white/10 hover:bg-white/15 transition cursor-pointer">
-              <Bell size={14} className="text-gray-400" />
+            <button className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/8 border border-white/10 hover:bg-white/15 transition cursor-pointer">
+              <Bell size={13} className="text-gray-400" />
             </button>
-            <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/8 border border-white/10 hover:bg-white/15 transition cursor-pointer">
-              <RefreshCw size={14} className="text-gray-400" />
+            <button className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/8 border border-white/10 hover:bg-white/15 transition cursor-pointer">
+              <RefreshCw size={13} className="text-gray-400" />
             </button>
-            <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 transition px-4 py-1.5 rounded-lg text-sm font-medium cursor-pointer border-none text-white">
-              <Send size={13} />
+            <button className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 transition px-3 py-1 rounded-lg text-xs font-medium cursor-pointer border-none text-white">
+              <Send size={12} />
               Transmit EDI
             </button>
-            <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/8 border border-white/10 hover:bg-white/15 transition cursor-pointer">
-              <MoreHorizontal size={14} className="text-gray-400" />
+            <button className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/8 border border-white/10 hover:bg-white/15 transition cursor-pointer">
+              <MoreHorizontal size={13} className="text-gray-400" />
             </button>
           </div>
         </header>
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto p-6 space-y-5">
+          {activeNav === 'Shipments'     && <ShipmentsTable />}
+          {activeNav === 'Tracking'      && <Tracking />}
+          {activeNav === 'Orders'        && <Orders />}
+          {activeNav === 'Invoices'      && <Invoices />}
+          {activeNav === 'Transmissions' && <Transmissions />}
+          {activeNav === 'EDI logs'      && <EdiLogs />}
+          {activeNav === 'Partners'      && <Partners />}
+          {activeNav === 'Reports'       && <Reports />}
+          {activeNav === 'Settings'      && <Settings />}
+          {activeNav === 'Dashboard' && (<>
 
           {/* Stat Cards */}
           <div className="grid grid-cols-4 gap-4">
@@ -231,6 +248,7 @@ function Dashboard({ user, onLogout }) {
             </div>
 
           </div>
+          </>)}
         </main>
       </div>
     </div>
