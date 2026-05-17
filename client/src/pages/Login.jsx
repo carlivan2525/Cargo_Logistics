@@ -7,10 +7,20 @@ function Login({ onLogin }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (username.trim() !== '') {
-      onLogin(username);
+    try {
+      const res = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (!res.ok) return alert(data.message);
+      localStorage.setItem('token', data.token);
+      onLogin(data.username);
+    } catch (err) {
+      alert('Server error. Try again.');
     }
   };
 
