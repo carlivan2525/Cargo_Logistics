@@ -15,13 +15,17 @@ router.post('/register', async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
     await new User({ username, password: hashed }).save();
     res.json({ message: 'User created successfully' });
-  } catch {
+  } catch (err) {
+    console.error('Register error:', err.message);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
 router.post('/login', async (req, res) => {
   try {
+    if (!process.env.JWT_SECRET) {
+      return res.status(503).json({ message: 'JWT_SECRET is not configured on the server' });
+    }
     const { username, password } = req.body;
     const user = await User.findOne({ username });
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
@@ -29,7 +33,8 @@ router.post('/login', async (req, res) => {
     if (!match) return res.status(401).json({ message: 'Invalid credentials' });
     const token = jwt.sign({ id: user._id, username }, process.env.JWT_SECRET, { expiresIn: '1d' });
     res.json({ token, username });
-  } catch {
+  } catch (err) {
+    console.error('Login error:', err.message);
     res.status(500).json({ message: 'Server error' });
   }
 });
