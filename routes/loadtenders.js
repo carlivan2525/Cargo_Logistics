@@ -24,12 +24,7 @@ router.post('/', auth, async (req, res) => {
     const count = await LoadTender.countDocuments();
     const tCount = await Transmission.countDocuments();
 
-    const {
-      route, weight, commodity, isaId,
-      shipmentId: bodyShipmentId,
-      pickupDate: bodyPickup,
-      deliveryDate: bodyDelivery,
-    } = req.body;
+    const { route, weight, commodity, isaId, shipmentId: bodyShipmentId } = req.body;
 
     if (!isaId) return res.status(400).json({ message: 'isaId is required (e.g. SURPLUS)' });
     if (!route) return res.status(400).json({ message: 'route is required' });
@@ -39,8 +34,6 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ message: `Partner not found for isaId: ${isaId}` });
     }
 
-    const defaultDates = getPickupAndDeliveryDates();
-
     const tender = new LoadTender({
       tenderId: `TND-${String(count + 1).padStart(4, '0')}`,
       ediRef:   `TRX-${String(tCount + 1).padStart(4, '0')}`,
@@ -49,8 +42,6 @@ router.post('/', auth, async (req, res) => {
       route,
       weight: weight || '',
       commodity: commodity || '',
-      pickupDate: bodyPickup || defaultDates.pickupDate,
-      deliveryDate: bodyDelivery || defaultDates.deliveryDate,
     });
     await tender.save();
 
