@@ -1,31 +1,38 @@
 import { useState } from 'react';
-import { Truck, MapPin, CheckCircle2, Clock, Package, ChevronDown } from 'lucide-react';
+import { Truck, CheckCircle2, Clock, Package, ChevronDown } from 'lucide-react';
 
-const STATUS_OPTIONS = ['Pending', 'In Transit', 'Out for Delivery', 'Delivered', 'Exception'];
+const STATUS_OPTIONS = ['Pending', 'Pickup', 'In Transit', 'Delivered', 'Exception'];
 
 const STATUS_STYLE = {
-  'Pending':          'bg-gray-500/20 text-gray-400',
-  'In Transit':       'bg-blue-500/20 text-blue-400',
-  'Out for Delivery': 'bg-orange-500/20 text-orange-400',
-  'Delivered':        'bg-green-500/20 text-green-400',
-  'Exception':        'bg-red-500/20 text-red-400',
+  'Pending':    'bg-gray-500/20 text-gray-400',
+  'Pickup':     'bg-yellow-500/20 text-yellow-400',
+  'In Transit': 'bg-blue-500/20 text-blue-400',
+  'Delivered':  'bg-green-500/20 text-green-400',
+  'Exception':  'bg-red-500/20 text-red-400',
 };
 
-const EDI_TRIGGER_STATUSES = ['In Transit', 'Out for Delivery', 'Delivered'];
+// 214 is sent on Pickup, In Transit, and Delivered
+const EDI_214_STATUSES = ['Pickup', 'In Transit', 'Delivered'];
+
+const EDI_214_LABEL = {
+  'Pickup':     'Pickup',
+  'In Transit': 'In Transit',
+  'Delivered':  'Delivered',
+};
 
 const MILESTONES = [
-  { key: 'Pending',          icon: Clock,         label: 'Order Received' },
-  { key: 'In Transit',       icon: Truck,         label: 'In Transit' },
-  { key: 'Out for Delivery', icon: MapPin,         label: 'Out for Delivery' },
-  { key: 'Delivered',        icon: CheckCircle2,  label: 'Delivered' },
+  { key: 'Pending',    icon: Clock,        label: 'Pending' },
+  { key: 'Pickup',     icon: Package,      label: 'Pickup' },
+  { key: 'In Transit', icon: Truck,        label: 'In Transit' },
+  { key: 'Delivered',  icon: CheckCircle2, label: 'Delivered' },
 ];
 
-const MILESTONE_ORDER = ['Pending', 'In Transit', 'Out for Delivery', 'Delivered'];
+const MILESTONE_ORDER = ['Pending', 'Pickup', 'In Transit', 'Delivered'];
 
 const initialShipments = [
-  { id: 'SHP-0516-001', route: 'Manila → Cebu',    company: 'RetailCo PH', status: 'In Transit',       ediSent: true  },
-  { id: 'SHP-0516-002', route: 'Batangas → Davao', company: 'SupplyMax',   status: 'Out for Delivery', ediSent: true  },
-  { id: 'SHP-0516-003', route: 'Laguna → QC',      company: 'MFG Direct',  status: 'Delivered',        ediSent: true  },
+  { id: 'SHP-0516-001', route: 'Manila → Cebu',    company: 'RetailCo PH', status: 'In Transit', ediSent: true  },
+  { id: 'SHP-0516-002', route: 'Batangas → Davao', company: 'SupplyMax',   status: 'Pickup',     ediSent: true  },
+  { id: 'SHP-0516-003', route: 'Laguna → QC',      company: 'MFG Direct',  status: 'Delivered',  ediSent: true  },
 ];
 
 function MilestoneTracker({ status }) {
@@ -88,7 +95,7 @@ function ShipmentsTable() {
   const updateStatus = (id, newStatus) => {
     setShipments(prev => prev.map(s =>
       s.id === id
-        ? { ...s, status: newStatus, ediSent: EDI_TRIGGER_STATUSES.includes(newStatus) }
+        ? { ...s, status: newStatus, ediSent: EDI_214_STATUSES.includes(newStatus) }
         : s
     ));
   };
@@ -148,7 +155,7 @@ function ShipmentsTable() {
                   {s.ediSent ? (
                     <span className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-full bg-purple-500/20 text-purple-400 font-medium w-fit">
                       <CheckCircle2 size={10} />
-                      EDI 214 Sent
+                      214 · {EDI_214_LABEL[s.status] ?? s.status}
                     </span>
                   ) : (
                     <span className="text-xs text-gray-600">—</span>

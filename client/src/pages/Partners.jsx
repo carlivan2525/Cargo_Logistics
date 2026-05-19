@@ -2,15 +2,14 @@ import { useState } from 'react';
 import { Globe, Plus, Search, CheckCircle2, XCircle, Edit2 } from 'lucide-react';
 
 const initialPartners = [
-  { id: 'PTR-001', name: 'RetailCo PH', type: 'Customer', isa: 'RETAILCO',  protocol: 'AS2',  status: 'Active',   docs: ['204','990','856','214','210'] },
-  { id: 'PTR-002', name: 'SupplyMax',   type: 'Customer', isa: 'SUPPLYMAX', protocol: 'SFTP', status: 'Active',   docs: ['204','856','214'] },
-  { id: 'PTR-003', name: 'MFG Direct',  type: 'Supplier', isa: 'MFGDIRECT', protocol: 'AS2',  status: 'Inactive', docs: ['856','210','997'] },
+  { id: 'PTR-001', name: 'RetailCo PH', type: 'Retailer',     isa: 'RETAILCO',  protocol: 'AS2',  status: 'Active',   docs: ['204','990','214','210'] },
+  { id: 'PTR-002', name: 'SupplyMax',   type: 'Manufacturer', isa: 'SUPPLYMAX', protocol: 'SFTP', status: 'Active',   docs: ['204','990','214','210'] },
+  { id: 'PTR-003', name: 'MFG Direct',  type: 'Manufacturer', isa: 'MFGDIRECT', protocol: 'AS2',  status: 'Inactive', docs: ['204','990','214'] },
 ];
 
 const TYPE_STYLE = {
-  'Customer': 'bg-blue-500/20 text-blue-400',
-  'Supplier': 'bg-purple-500/20 text-purple-400',
-  'Carrier':  'bg-orange-500/20 text-orange-400',
+  'Retailer':     'bg-blue-500/20 text-blue-400',
+  'Manufacturer': 'bg-purple-500/20 text-purple-400',
 };
 
 function Partners() {
@@ -53,7 +52,7 @@ function Partners() {
             className="bg-white/5 border border-white/10 text-xs text-gray-300 rounded-lg px-2 py-1.5 outline-none cursor-pointer"
           >
             <option value="All">All Types</option>
-            {['Customer','Supplier','Carrier'].map(t => <option key={t} value={t}>{t}</option>)}
+            {['Retailer','Manufacturer'].map(t => <option key={t} value={t}>{t}</option>)}
           </select>
           <button className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg transition cursor-pointer border-none font-medium">
             <Plus size={12} /> Add Partner

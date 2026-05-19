@@ -9,9 +9,13 @@ const STATUS_STYLE = {
 };
 
 const initialTransmissions = [
-  { id: 'TRX-0001', ediCode: '204', label: 'Load Tender', dir: 'OUT', partner: 'RetailCo PH', shipment: 'SHP-0516-001', time: '09:14', status: 'Sent' },
-  { id: 'TRX-0002', ediCode: '990', label: 'LT Response', dir: 'IN',  partner: 'RetailCo PH', shipment: 'SHP-0516-001', time: '09:18', status: 'Received' },
-  { id: 'TRX-0003', ediCode: '856', label: 'Ship Notice', dir: 'OUT', partner: 'SupplyMax',   shipment: 'SHP-0516-002', time: '10:02', status: 'Failed' },
+  { id: 'TRX-0001', ediCode: '204', label: 'Load Tender',  dir: 'IN',  partner: 'RetailCo PH', shipment: 'SHP-0516-001', time: '09:14', status: 'Received' },
+  { id: 'TRX-0002', ediCode: '990', label: 'LT Response',  dir: 'OUT', partner: 'RetailCo PH', shipment: 'SHP-0516-001', time: '09:18', status: 'Sent' },
+  { id: 'TRX-0003', ediCode: '214', label: 'Ship Status',  dir: 'OUT', partner: 'RetailCo PH', shipment: 'SHP-0516-001', time: '10:02', status: 'Sent' },
+  { id: 'TRX-0004', ediCode: '210', label: 'Invoice',      dir: 'OUT', partner: 'RetailCo PH', shipment: 'SHP-0516-001', time: '11:45', status: 'Sent' },
+  { id: 'TRX-0005', ediCode: '204', label: 'Load Tender',  dir: 'IN',  partner: 'SupplyMax',   shipment: 'SHP-0516-002', time: '08:30', status: 'Received' },
+  { id: 'TRX-0006', ediCode: '990', label: 'LT Response',  dir: 'OUT', partner: 'SupplyMax',   shipment: 'SHP-0516-002', time: '08:35', status: 'Sent' },
+  { id: 'TRX-0007', ediCode: '214', label: 'Ship Status',  dir: 'OUT', partner: 'SupplyMax',   shipment: 'SHP-0516-002', time: '09:50', status: 'Failed' },
 ];
 
 function Transmissions() {

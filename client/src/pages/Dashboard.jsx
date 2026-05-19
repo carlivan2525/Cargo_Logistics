@@ -1,54 +1,48 @@
 import { useState } from 'react';
 import {
-  LayoutDashboard, ShoppingCart, Truck, MapPin, FileText,
-  ArrowUpDown, Database, Globe, BarChart2, Settings as SettingsIcon,
+  LayoutDashboard, Truck, FileText, Inbox,
+  ArrowUpDown, Globe, Settings as SettingsIcon,
   Search, Bell, RefreshCw, Send, MoreHorizontal,
   LogOut, CheckCircle2, AlertTriangle, Package, FileCheck
 } from 'lucide-react';
 import logo from '../assets/CarGO-logo.png';
 import ShipmentsTable from './Shipments';
-import Tracking from './Tracking';
-import Orders from './Orders';
 import Invoices from './Invoices';
 import Transmissions from './Transmissions';
-import EdiLogs from './EdiLogs';
 import Partners from './Partners';
-import Reports from './Reports';
 import Settings from './Settings';
+import LoadTenders from './LoadTenders';
 
 const navSections = [
   {
     title: 'MAIN',
     items: [
-      { icon: LayoutDashboard, label: 'Dashboard', active: true },
-      { icon: ShoppingCart,    label: 'Orders',    badge: 48 },
-      { icon: Truck,           label: 'Shipments', badge: 12 },
-      { icon: MapPin,          label: 'Tracking' },
-      { icon: FileText,        label: 'Invoices',  badgeRed: 3 },
+      { icon: LayoutDashboard, label: 'Dashboard' },
+      { icon: Inbox,           label: 'Load Tenders', badgeYellow: 2 },
+      { icon: Truck,           label: 'Shipments',    badge: 12 },
+      { icon: FileText,        label: 'Invoices',     badgeRed: 3 },
     ],
   },
   {
     title: 'EDI',
     items: [
       { icon: ArrowUpDown, label: 'Transmissions' },
-      { icon: Database,    label: 'EDI logs' },
       { icon: Globe,       label: 'Partners' },
     ],
   },
   {
     title: 'SYSTEM',
     items: [
-      { icon: BarChart2, label: 'Reports' },
-      { icon: SettingsIcon,  label: 'Settings' },
+      { icon: SettingsIcon, label: 'Settings' },
     ],
   },
 ];
 
 const statCards = [
-  { icon: Truck,        label: 'Active shipments', value: '1,284', sub: '+12% this week',  subColor: 'text-green-400' },
-  { icon: ArrowUpDown,  label: 'EDI docs today',   value: '347',   sub: 'ANSI X12 sent',   subColor: 'text-gray-400' },
-  { icon: FileCheck,    label: 'Invoiced (210)',    value: '₱2.1M', sub: '84 docs pending', subColor: 'text-gray-400' },
-  { icon: AlertTriangle,label: 'Exceptions',        value: '9',     sub: 'Requires review', subColor: 'text-red-400', valueColor: 'text-red-400' },
+  { icon: Truck,        label: 'Active Shipments', value: '1,284', sub: '+12% this week',   subColor: 'text-green-400' },
+  { icon: ArrowUpDown,  label: '204 Received',     value: '47',    sub: 'Load tenders in',  subColor: 'text-gray-400' },
+  { icon: FileCheck,    label: '214 Sent',          value: '312',   sub: 'Status updates',   subColor: 'text-gray-400' },
+  { icon: AlertTriangle,label: 'Exceptions',        value: '9',     sub: 'Requires review',  subColor: 'text-red-400', valueColor: 'text-red-400' },
 ];
 
 const shipments = [
@@ -58,9 +52,10 @@ const shipments = [
 ];
 
 const ediPipeline = [
-  { code: '204', label: 'Load tender', dir: 'OUT', desc: 'Sent to RetailCo PH',  time: '09:14' },
-  { code: '990', label: 'LT response', dir: 'IN',  desc: 'Load accepted',         time: '09:18' },
-  { code: '856', label: 'Ship notice', dir: 'OUT', desc: 'Shipment details sent', time: '10:02' },
+  { code: '204', label: 'Load Tender',  dir: 'IN',  desc: 'Received from RetailCo PH', time: '09:14' },
+  { code: '990', label: 'LT Response',  dir: 'OUT', desc: 'Acknowledged — Accepted',    time: '09:18' },
+  { code: '214', label: 'Ship Status',  dir: 'OUT', desc: 'Pickup confirmed',            time: '10:02' },
+  { code: '210', label: 'Invoice',      dir: 'OUT', desc: 'Invoice sent to RetailCo PH', time: '11:45' },
 ];
 
 function Dashboard({ user, onLogout }) {
@@ -84,7 +79,7 @@ function Dashboard({ user, onLogout }) {
             <div key={title}>
               <p className="text-[10px] font-semibold text-gray-500 tracking-widest px-2 mb-1.5">{title}</p>
               <ul className="space-y-0.5">
-                {items.map(({ icon: Icon, label, badge, badgeRed }) => (
+                {items.map(({ icon: Icon, label, badge, badgeRed, badgeYellow }) => (
                   <li key={label}>
                     <button
                       onClick={() => setActiveNav(label)}
@@ -95,8 +90,9 @@ function Dashboard({ user, onLogout }) {
                         <Icon size={15} />
                         {label}
                       </span>
-                      {badge    && <span className="text-[11px] bg-white/15 px-1.5 py-0.5 rounded">{badge}</span>}
-                      {badgeRed && <span className="text-[11px] bg-red-500 px-1.5 py-0.5 rounded">{badgeRed}</span>}
+                      {badge       && <span className="text-[11px] bg-white/15 px-1.5 py-0.5 rounded">{badge}</span>}
+                      {badgeRed    && <span className="text-[11px] bg-red-500 px-1.5 py-0.5 rounded">{badgeRed}</span>}
+                      {badgeYellow && <span className="text-[11px] bg-yellow-500 text-black px-1.5 py-0.5 rounded font-semibold">{badgeYellow}</span>}
                     </button>
                   </li>
                 ))}
@@ -156,14 +152,11 @@ function Dashboard({ user, onLogout }) {
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto p-6 space-y-5">
+          {activeNav === 'Load Tenders'  && <LoadTenders />}
           {activeNav === 'Shipments'     && <ShipmentsTable />}
-          {activeNav === 'Tracking'      && <Tracking />}
-          {activeNav === 'Orders'        && <Orders />}
           {activeNav === 'Invoices'      && <Invoices />}
           {activeNav === 'Transmissions' && <Transmissions />}
-          {activeNav === 'EDI logs'      && <EdiLogs />}
           {activeNav === 'Partners'      && <Partners />}
-          {activeNav === 'Reports'       && <Reports />}
           {activeNav === 'Settings'      && <Settings />}
           {activeNav === 'Dashboard' && (<>
 

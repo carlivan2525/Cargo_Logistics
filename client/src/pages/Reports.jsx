@@ -15,8 +15,9 @@ const topPartners = [
 ];
 
 const ediSummary = [
-  { code: '204', label: 'Load Tender',   sent: 312, received: 0,   ack: 298 },
-  { code: '856', label: 'Ship Notice',   sent: 284, received: 0,   ack: 271 },
+  { code: '204', label: 'Load Tender',   sent: 0,   received: 312, ack: 312 },
+  { code: '990', label: 'LT Response',   sent: 312, received: 0,   ack: 0   },
+  { code: '214', label: 'Ship Status',   sent: 284, received: 0,   ack: 0   },
   { code: '210', label: 'Invoice',       sent: 248, received: 0,   ack: 240 },
 ];
 

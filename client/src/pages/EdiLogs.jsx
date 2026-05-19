@@ -16,9 +16,11 @@ const LEVEL_ICON = {
 };
 
 const logs = [
-  { id: 1, time: '09:14:02', level: 'OK',    ediCode: '204', partner: 'RetailCo PH', message: 'Load tender sent successfully', isa: 'ISA*00*...*ZZ*RETAILCO*20260517*0914*^*00501*000000001*0*P*>' },
-  { id: 2, time: '09:18:44', level: 'OK',    ediCode: '990', partner: 'RetailCo PH', message: 'Load tender response received — Accepted', isa: 'ISA*00*...*ZZ*CARGO*20260517*0918*^*00501*000000002*0*P*>' },
-  { id: 3, time: '10:02:11', level: 'ERROR', ediCode: '856', partner: 'SupplyMax',   message: 'Transmission failed — Connection timeout', isa: 'ISA*00*...*ZZ*SUPPLYMAX*20260517*1002*^*00501*000000003*0*P*>' },
+  { id: 1, time: '09:14:02', level: 'OK',    ediCode: '204', partner: 'RetailCo PH', message: 'Load tender received — Accepted', isa: 'ISA*00*...*ZZ*RETAILCO*20260517*0914*^*00501*000000001*0*P*>' },
+  { id: 2, time: '09:18:44', level: 'OK',    ediCode: '990', partner: 'RetailCo PH', message: 'Acknowledgment sent — Accepted',   isa: 'ISA*00*...*ZZ*CARGO*20260517*0918*^*00501*000000002*0*P*>' },
+  { id: 3, time: '10:02:11', level: 'OK',    ediCode: '214', partner: 'RetailCo PH', message: 'Shipment status sent — Pickup',    isa: 'ISA*00*...*ZZ*CARGO*20260517*1002*^*00501*000000003*0*P*>' },
+  { id: 4, time: '11:45:00', level: 'OK',    ediCode: '210', partner: 'RetailCo PH', message: 'Invoice sent successfully',        isa: 'ISA*00*...*ZZ*CARGO*20260517*1145*^*00501*000000004*0*P*>' },
+  { id: 5, time: '09:50:33', level: 'ERROR', ediCode: '214', partner: 'SupplyMax',   message: 'Transmission failed — Connection timeout', isa: 'ISA*00*...*ZZ*SUPPLYMAX*20260517*0950*^*00501*000000005*0*P*>' },
 ];
 
 function EdiLogs() {
