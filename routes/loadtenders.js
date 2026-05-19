@@ -4,6 +4,7 @@ const Transmission = require('../models/Transmission');
 const Shipment = require('../models/Shipment');
 const Vehicle = require('../models/Vehicle');
 const auth = require('../middleware/auth');
+const { getPickupAndDeliveryDates } = require('../utils/dates');
 const router = express.Router();
 
 // GET all — populated
@@ -22,10 +23,15 @@ router.post('/', auth, async (req, res) => {
     const count = await LoadTender.countDocuments();
     const tCount = await Transmission.countDocuments();
 
+    const { pickupDate: bodyPickup, deliveryDate: bodyDelivery, ...rest } = req.body;
+    const defaultDates = getPickupAndDeliveryDates();
+
     const tender = new LoadTender({
       tenderId: `TND-${String(count + 1).padStart(4, '0')}`,
       ediRef:   `TRX-${String(tCount + 1).padStart(4, '0')}`,
-      ...req.body,
+      pickupDate: bodyPickup || defaultDates.pickupDate,
+      deliveryDate: bodyDelivery || defaultDates.deliveryDate,
+      ...rest,
     });
     await tender.save();
 
@@ -55,17 +61,24 @@ router.post('/:id/respond', auth, async (req, res) => {
     if (tender.status !== 'Pending') return res.status(400).json({ message: 'Already responded' });
 
     tender.status = status;
+
+    if (status === 'Accepted') {
+      const { pickupDate, deliveryDate } = getPickupAndDeliveryDates();
+      tender.pickupDate = pickupDate;
+      tender.deliveryDate = deliveryDate;
+    }
+
     if (status === 'Accepted' && vehicleId) {
       tender.assignedVehicle = vehicleId;
       await Vehicle.findByIdAndUpdate(vehicleId, { status: 'In Use' });
 
-      // Auto-create shipment on acceptance
+      const routeParts = tender.route.split(/\s*[-→]\s*/);
       const sCount = await Shipment.countDocuments();
       await new Shipment({
         shipmentId:  tender.shipmentId,
         route:       tender.route,
-        origin:      tender.route.split('→')[0]?.trim(),
-        destination: tender.route.split('→')[1]?.trim(),
+        origin:      routeParts[0]?.trim(),
+        destination: routeParts[1]?.trim(),
         partner:     tender.partner,
         vehicle:     vehicleId,
         tender:      tender._id,
