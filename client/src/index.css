@@ -4,6 +4,50 @@
   font-family: 'Inter', system-ui, sans-serif;
 }
 
+/* CarGO app theme */
+:root,
+[data-theme="dark"] {
+  --app-bg: #0f1117;
+  --card-bg: #13151f;
+  --elevated-bg: #1a1d2a;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --text-primary: #ffffff;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --hover-bg: rgba(255, 255, 255, 0.08);
+  --overlay: rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="light"] {
+  --app-bg: #f1f5f9;
+  --card-bg: #ffffff;
+  --elevated-bg: #f8fafc;
+  --border-color: rgba(0, 0, 0, 0.1);
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --input-bg: #f9fafb;
+  --hover-bg: rgba(0, 0, 0, 0.05);
+  --overlay: rgba(0, 0, 0, 0.4);
+}
+
+@layer utilities {
+  .bg-app { background-color: var(--app-bg); }
+  .bg-card { background-color: var(--card-bg); }
+  .bg-elevated { background-color: var(--elevated-bg); }
+  .bg-input { background-color: var(--input-bg); }
+  .bg-hover { background-color: var(--hover-bg); }
+  .border-app { border-color: var(--border-color); }
+  .border-subtle { border-color: var(--border-subtle); }
+  .text-app { color: var(--text-primary); }
+  .text-secondary-app { color: var(--text-secondary); }
+  .text-muted-app { color: var(--text-muted); }
+  .divide-app > :not([hidden]) ~ :not([hidden]) { border-color: var(--border-subtle); }
+}
+
 :root {
   --text: #6b6375;
   --text-h: #08060d;

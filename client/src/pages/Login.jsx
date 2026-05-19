@@ -25,17 +25,17 @@ function Login({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#0f1117] relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center bg-app relative overflow-hidden">
 
       {/* Background glow blobs */}
       <div className="absolute w-72 h-72 bg-blue-600/20 rounded-full blur-3xl -top-20 -left-20 pointer-events-none" />
       <div className="absolute w-96 h-96 bg-blue-800/20 rounded-full blur-3xl -bottom-24 -right-20 pointer-events-none" />
 
       {/* Card */}
-      <div className="relative z-10 flex w-[860px] max-w-[95vw] min-h-[500px] rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+      <div className="relative z-10 flex w-[860px] max-w-[95vw] min-h-[500px] rounded-2xl overflow-hidden shadow-2xl border border-app">
 
         {/* Left Panel */}
-        <div className="hidden md:flex w-[38%] bg-[#13151f] border-r border-white/10 flex-col items-center justify-between p-10 text-white">
+        <div className="hidden md:flex w-[38%] bg-card border-r border-app flex-col items-center justify-between p-10 text-white">
 
           {/* Logo */}
           <div className="flex flex-col items-center gap-3">
@@ -66,7 +66,7 @@ function Login({ onLogin }) {
           <div className="text-center mb-3">
             <div className="flex items-center justify-center gap-1.5 mb-1">
               <Truck size={13} className="text-blue-400" />
-              <p className="text-sm font-semibold text-white">Real-time Tracking</p>
+              <p className="text-sm font-semibold text-app">Real-time Tracking</p>
             </div>
             <p className="text-xs text-gray-500 leading-relaxed">Monitor shipments, manage EDI docs, and streamline logistics operations.</p>
           </div>
@@ -80,7 +80,7 @@ function Login({ onLogin }) {
         </div>
 
         {/* Right Panel */}
-        <div className="flex-1 bg-[#13151f] flex items-center justify-center px-10 py-12">
+        <div className="flex-1 bg-card flex items-center justify-center px-10 py-12">
           <div className="w-full max-w-sm">
 
             {/* Mobile logo */}
@@ -88,7 +88,7 @@ function Login({ onLogin }) {
               <img src={logo} alt="CarGO Logo" className="h-10 w-auto object-contain" />
             </div>
 
-            <h2 className="text-xl font-semibold text-white mb-1">Log in to CarGO</h2>
+            <h2 className="text-xl font-semibold text-app mb-1">Log in to CarGO</h2>
             <p className="text-sm text-gray-500 mb-7">Login using your official credentials</p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -102,7 +102,7 @@ function Login({ onLogin }) {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
-                  className="px-3.5 py-2.5 border border-white/10 rounded-lg text-sm bg-white/5 text-white placeholder-gray-600 outline-none focus:border-blue-500 focus:bg-white/8 transition"
+                  className="px-3.5 py-2.5 border border-app rounded-lg text-sm bg-input text-white placeholder-gray-600 outline-none focus:border-blue-500 focus:bg-hover transition"
                 />
               </div>
 
@@ -115,7 +115,7 @@ function Login({ onLogin }) {
                     placeholder="Enter password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3.5 py-2.5 pr-10 border border-white/10 rounded-lg text-sm bg-white/5 text-white placeholder-gray-600 outline-none focus:border-blue-500 focus:bg-white/8 transition"
+                    className="w-full px-3.5 py-2.5 pr-10 border border-app rounded-lg text-sm bg-input text-white placeholder-gray-600 outline-none focus:border-blue-500 focus:bg-hover transition"
                   />
                   <button
                     type="button"

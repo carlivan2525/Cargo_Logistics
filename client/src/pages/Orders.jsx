@@ -23,17 +23,17 @@ function StatusDropdown({ value, onChange }) {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-white/8 border border-white/10 text-gray-300 hover:bg-white/15 transition cursor-pointer"
+        className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-hover border border-app text-gray-300 hover:bg-white/15 transition cursor-pointer"
       >
         {value} <ChevronDown size={10} />
       </button>
       {open && (
-        <div className="absolute right-0 top-8 z-20 bg-[#1a1d2a] border border-white/10 rounded-lg shadow-xl overflow-hidden w-36">
+        <div className="absolute right-0 top-8 z-20 bg-elevated border border-app rounded-lg shadow-xl overflow-hidden w-36">
           {STATUS_OPTIONS.map(s => (
             <button
               key={s}
               onClick={() => { onChange(s); setOpen(false); }}
-              className={`w-full text-left px-3 py-2 text-xs hover:bg-white/8 transition cursor-pointer border-none
+              className={`w-full text-left px-3 py-2 text-xs hover:bg-hover transition cursor-pointer border-none
                 ${value === s ? 'text-blue-400 bg-blue-500/10' : 'text-gray-300'}`}
             >
               {s}
@@ -62,18 +62,18 @@ function Orders() {
   });
 
   return (
-    <div className="bg-[#13151f] rounded-xl border border-white/10 overflow-hidden">
+    <div className="bg-card rounded-xl border border-app overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-app">
         <div className="flex items-center gap-2">
           <ShoppingCart size={14} className="text-gray-400" />
-          <span className="font-semibold text-sm text-white">Orders</span>
+          <span className="font-semibold text-sm text-app">Orders</span>
           <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">
             {orders.filter(o => o.status === 'Pending').length} pending
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
+          <div className="flex items-center gap-1.5 bg-input border border-app rounded-lg px-3 py-1.5">
             <Search size={12} className="text-gray-500" />
             <input
               type="text"
@@ -86,7 +86,7 @@ function Orders() {
           <select
             value={filterStatus}
             onChange={e => setFilterStatus(e.target.value)}
-            className="bg-white/5 border border-white/10 text-xs text-gray-300 rounded-lg px-2 py-1.5 outline-none cursor-pointer"
+            className="bg-input border border-app text-xs text-gray-300 rounded-lg px-2 py-1.5 outline-none cursor-pointer"
           >
             <option value="All">All Status</option>
             {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
@@ -101,7 +101,7 @@ function Orders() {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-gray-500 text-xs border-b border-white/10">
+            <tr className="text-gray-500 text-xs border-b border-app">
               <th className="text-left px-5 py-2.5 font-medium">Order ID</th>
               <th className="text-left px-5 py-2.5 font-medium">Customer</th>
               <th className="text-left px-5 py-2.5 font-medium">Items</th>
@@ -113,11 +113,11 @@ function Orders() {
           </thead>
           <tbody>
             {filtered.map(o => (
-              <tr key={o.id} className="border-b border-white/5 hover:bg-white/5 transition">
+              <tr key={o.id} className="border-b border-subtle hover:bg-hover transition">
                 <td className="px-5 py-3 font-mono text-xs text-gray-400">{o.id}</td>
-                <td className="px-5 py-3 text-sm text-white font-medium">{o.customer}</td>
+                <td className="px-5 py-3 text-sm text-app font-medium">{o.customer}</td>
                 <td className="px-5 py-3 text-xs text-gray-400">{o.items} items</td>
-                <td className="px-5 py-3 text-xs text-white font-semibold">{o.total}</td>
+                <td className="px-5 py-3 text-xs text-app font-semibold">{o.total}</td>
                 <td className="px-5 py-3 text-xs text-gray-500">{o.date}</td>
                 <td className="px-5 py-3">
                   <span className={`text-xs px-2 py-1 rounded-full ${STATUS_STYLE[o.status]}`}>{o.status}</span>

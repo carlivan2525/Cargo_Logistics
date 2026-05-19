@@ -37,18 +37,18 @@ function EdiLogs() {
   });
 
   return (
-    <div className="bg-[#13151f] rounded-xl border border-white/10 overflow-hidden">
+    <div className="bg-card rounded-xl border border-app overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-app">
         <div className="flex items-center gap-2">
           <Database size={14} className="text-gray-400" />
-          <span className="font-semibold text-sm text-white">EDI Logs</span>
+          <span className="font-semibold text-sm text-app">EDI Logs</span>
           <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">
             {logs.filter(l => l.level === 'ERROR').length} errors
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
+          <div className="flex items-center gap-1.5 bg-input border border-app rounded-lg px-3 py-1.5">
             <Search size={12} className="text-gray-500" />
             <input
               type="text"
@@ -61,7 +61,7 @@ function EdiLogs() {
           <select
             value={filterLevel}
             onChange={e => setFilterLevel(e.target.value)}
-            className="bg-white/5 border border-white/10 text-xs text-gray-300 rounded-lg px-2 py-1.5 outline-none cursor-pointer"
+            className="bg-input border border-app text-xs text-gray-300 rounded-lg px-2 py-1.5 outline-none cursor-pointer"
           >
             <option value="All">All Levels</option>
             {['OK','INFO','WARN','ERROR'].map(l => <option key={l} value={l}>{l}</option>)}
@@ -70,14 +70,14 @@ function EdiLogs() {
       </div>
 
       {/* Log list */}
-      <div className="font-mono text-xs divide-y divide-white/5 overflow-y-auto max-h-[600px]">
+      <div className="font-mono text-xs divide-y divide-app overflow-y-auto max-h-[600px]">
         {filtered.map(log => {
           const Icon = LEVEL_ICON[log.level];
           const isExpanded = expanded === log.id;
           return (
             <div
               key={log.id}
-              className="hover:bg-white/5 transition cursor-pointer"
+              className="hover:bg-hover transition cursor-pointer"
               onClick={() => setExpanded(isExpanded ? null : log.id)}
             >
               <div className="flex items-start gap-3 px-5 py-3">
@@ -97,7 +97,7 @@ function EdiLogs() {
               </div>
               {isExpanded && log.isa && (
                 <div className="px-5 pb-3 ml-10">
-                  <div className="bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-gray-400 text-[11px] break-all">
+                  <div className="bg-black/40 border border-app rounded-lg px-4 py-2.5 text-gray-400 text-[11px] break-all">
                     {log.isa}
                   </div>
                 </div>

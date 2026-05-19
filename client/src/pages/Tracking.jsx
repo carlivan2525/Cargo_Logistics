@@ -85,9 +85,9 @@ function Tracking() {
   return (
     <div className="flex gap-4 h-full">
       {/* Left: list */}
-      <div className="w-72 flex-shrink-0 bg-[#13151f] rounded-xl border border-white/10 flex flex-col overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/10">
-          <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
+      <div className="w-72 flex-shrink-0 bg-card rounded-xl border border-app flex flex-col overflow-hidden">
+        <div className="px-4 py-3 border-b border-app">
+          <div className="flex items-center gap-2 bg-input border border-app rounded-lg px-3 py-1.5">
             <Search size={12} className="text-gray-500" />
             <input
               type="text"
@@ -98,16 +98,16 @@ function Tracking() {
             />
           </div>
         </div>
-        <ul className="flex-1 overflow-y-auto divide-y divide-white/5">
+        <ul className="flex-1 overflow-y-auto divide-y divide-app">
           {filtered.map(s => (
             <li key={s.id}>
               <button
                 onClick={() => setSelected(s)}
-                className={`w-full text-left px-4 py-3 hover:bg-white/5 transition border-none cursor-pointer
+                className={`w-full text-left px-4 py-3 hover:bg-hover transition border-none cursor-pointer
                   ${selected?.id === s.id ? 'bg-blue-600/10 border-l-2 border-blue-500' : ''}`}
               >
                 <p className="text-xs font-mono text-gray-400">{s.id}</p>
-                <p className="text-sm font-medium text-white mt-0.5">{s.route}</p>
+                <p className="text-sm font-medium text-app mt-0.5">{s.route}</p>
                 <p className="text-xs text-gray-500">{s.company}</p>
                 <span className={`inline-block mt-1.5 text-[10px] px-2 py-0.5 rounded-full ${STATUS_STYLE[s.status]}`}>
                   {s.status}
@@ -120,13 +120,13 @@ function Tracking() {
 
       {/* Right: map + timeline */}
       {selected && (
-        <div className="flex-1 bg-[#13151f] rounded-xl border border-white/10 overflow-hidden flex flex-col">
+        <div className="flex-1 bg-card rounded-xl border border-app overflow-hidden flex flex-col">
           {/* Header */}
-          <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between flex-shrink-0">
+          <div className="px-5 py-4 border-b border-app flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-3">
               <MapPin size={15} className="text-blue-400" />
               <div>
-                <p className="text-sm font-semibold text-white">{selected.id}</p>
+                <p className="text-sm font-semibold text-app">{selected.id}</p>
                 <p className="text-xs text-gray-500">{selected.route} · {selected.company}</p>
               </div>
             </div>
@@ -141,7 +141,7 @@ function Tracking() {
             <MapContainer
               center={center}
               zoom={7}
-              style={{ height: '100%', width: '100%', background: '#0f1117' }}
+              style={{ height: '100%', width: '100%', background: 'var(--app-bg)' }}
               zoomControl={true}
             >
               <MapController center={center} />
@@ -170,9 +170,9 @@ function Tracking() {
           </div>
 
           {/* Timeline */}
-          <div className="px-6 py-4 border-t border-white/10 flex-shrink-0 max-h-48 overflow-y-auto">
+          <div className="px-6 py-4 border-t border-app flex-shrink-0 max-h-48 overflow-y-auto">
             <p className="text-[10px] text-gray-500 font-semibold tracking-widest mb-3">TRACKING TIMELINE</p>
-            <ol className="relative border-l border-white/10 space-y-4 ml-2">
+            <ol className="relative border-l border-app space-y-4 ml-2">
               {selected.events.map((ev, i) => (
                 <li key={i} className="ml-5">
                   <span className={`absolute -left-2 flex items-center justify-center w-4 h-4 rounded-full

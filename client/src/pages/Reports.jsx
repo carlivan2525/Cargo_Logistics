@@ -34,12 +34,12 @@ function Reports() {
           { icon: FileText,    label: 'Invoices Issued', value: '248',   sub: '₱12.4M total',       color: 'text-green-400' },
           { icon: TrendingUp,  label: 'On-time Rate',    value: '94.2%', sub: '+1.8% vs last month',color: 'text-orange-400' },
         ].map(({ icon: Icon, label, value, sub, color }) => (
-          <div key={label} className="bg-[#13151f] rounded-xl p-4 border border-white/10">
+          <div key={label} className="bg-card rounded-xl p-4 border border-app">
             <div className="flex items-center gap-2 text-gray-400 text-xs mb-3">
               <Icon size={13} className={color} />
               <span>{label}</span>
             </div>
-            <p className="text-3xl font-bold text-white">{value}</p>
+            <p className="text-3xl font-bold text-app">{value}</p>
             <p className="text-xs mt-1 text-gray-500">{sub}</p>
           </div>
         ))}
@@ -47,13 +47,13 @@ function Reports() {
 
       <div className="grid grid-cols-5 gap-4">
         {/* Bar chart */}
-        <div className="col-span-2 bg-[#13151f] rounded-xl border border-white/10 p-5">
+        <div className="col-span-2 bg-card rounded-xl border border-app p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <BarChart2 size={14} className="text-gray-400" />
-              <span className="text-sm font-semibold text-white">Monthly Shipments</span>
+              <span className="text-sm font-semibold text-app">Monthly Shipments</span>
             </div>
-            <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition cursor-pointer bg-transparent border-none">
+            <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-app transition cursor-pointer bg-transparent border-none">
               <Download size={12} /> Export
             </button>
           </div>
@@ -72,16 +72,16 @@ function Reports() {
         </div>
 
         {/* Top partners */}
-        <div className="col-span-3 bg-[#13151f] rounded-xl border border-white/10 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10">
-            <span className="text-sm font-semibold text-white">Top Partners</span>
-            <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition cursor-pointer bg-transparent border-none">
+        <div className="col-span-3 bg-card rounded-xl border border-app overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-app">
+            <span className="text-sm font-semibold text-app">Top Partners</span>
+            <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-app transition cursor-pointer bg-transparent border-none">
               <Download size={12} /> Export
             </button>
           </div>
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-gray-500 text-xs border-b border-white/10">
+              <tr className="text-gray-500 text-xs border-b border-app">
                 <th className="text-left px-5 py-2.5 font-medium">Partner</th>
                 <th className="text-left px-5 py-2.5 font-medium">Shipments</th>
                 <th className="text-left px-5 py-2.5 font-medium">Revenue</th>
@@ -90,8 +90,8 @@ function Reports() {
             </thead>
             <tbody>
               {topPartners.map(p => (
-                <tr key={p.name} className="border-b border-white/5 hover:bg-white/5 transition">
-                  <td className="px-5 py-3 text-sm text-white font-medium">{p.name}</td>
+                <tr key={p.name} className="border-b border-subtle hover:bg-hover transition">
+                  <td className="px-5 py-3 text-sm text-app font-medium">{p.name}</td>
                   <td className="px-5 py-3 text-xs text-gray-400">{p.shipments}</td>
                   <td className="px-5 py-3 text-xs text-green-400 font-semibold">{p.revenue}</td>
                   <td className="px-5 py-3 text-xs text-gray-400">{p.edi}</td>
@@ -103,19 +103,19 @@ function Reports() {
       </div>
 
       {/* EDI summary */}
-      <div className="bg-[#13151f] rounded-xl border border-white/10 overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10">
+      <div className="bg-card rounded-xl border border-app overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-app">
           <div className="flex items-center gap-2">
             <ArrowUpDown size={14} className="text-gray-400" />
-            <span className="text-sm font-semibold text-white">EDI Document Summary</span>
+            <span className="text-sm font-semibold text-app">EDI Document Summary</span>
           </div>
-          <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition cursor-pointer bg-transparent border-none">
+          <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-app transition cursor-pointer bg-transparent border-none">
             <Download size={12} /> Export
           </button>
         </div>
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-gray-500 text-xs border-b border-white/10">
+            <tr className="text-gray-500 text-xs border-b border-app">
               <th className="text-left px-5 py-2.5 font-medium">EDI Code</th>
               <th className="text-left px-5 py-2.5 font-medium">Document Type</th>
               <th className="text-left px-5 py-2.5 font-medium">Sent</th>
@@ -125,9 +125,9 @@ function Reports() {
           </thead>
           <tbody>
             {ediSummary.map(e => (
-              <tr key={e.code} className="border-b border-white/5 hover:bg-white/5 transition">
+              <tr key={e.code} className="border-b border-subtle hover:bg-hover transition">
                 <td className="px-5 py-3">
-                  <span className="text-xs font-bold text-white bg-white/10 px-2 py-0.5 rounded font-mono">{e.code}</span>
+                  <span className="text-xs font-bold text-app bg-white/10 px-2 py-0.5 rounded font-mono">{e.code}</span>
                 </td>
                 <td className="px-5 py-3 text-xs text-gray-300">{e.label}</td>
                 <td className="px-5 py-3 text-xs text-blue-400">{e.sent || '—'}</td>
