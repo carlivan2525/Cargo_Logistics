@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Eye, EyeOff, Truck } from 'lucide-react';
 import logo from '../assets/CarGO-logo.png';
+import { api } from '../api';
 
 function Login({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -10,13 +11,7 @@ function Login({ onLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:5000/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json();
-      if (!res.ok) return alert(data.message);
+      const data = await api.post('/auth/login', { username, password });
       localStorage.setItem('token', data.token);
       onLogin(data.username);
     } catch (err) {
