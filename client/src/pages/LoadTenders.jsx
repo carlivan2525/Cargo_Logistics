@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Inbox, Truck, CheckCircle2, XCircle, Clock, ChevronDown } from 'lucide-react';
 import { api } from '../api';
+import { canVehicleCarryLoad } from '../utils/capacity';
 
 const VEHICLE_TYPE_STYLE = {
   'L300':     'bg-blue-500/20 text-blue-400',
@@ -15,9 +16,10 @@ const STATUS_STYLE = {
 };
 
 // Modal to simulate an incoming EDI 204 from a partner
-function VehicleDropdown({ value, onChange, vehicles }) {
+function VehicleDropdown({ value, onChange, vehicles, loadWeight }) {
   const [open, setOpen] = useState(false);
   const selected = vehicles.find(v => v._id === value);
+  const available = vehicles.filter(v => v.status === 'Available');
 
   return (
     <div className="relative">
@@ -33,21 +35,26 @@ function VehicleDropdown({ value, onChange, vehicles }) {
       </button>
       {open && (
         <div className="absolute left-0 top-9 z-30 bg-elevated border border-app rounded-lg shadow-xl overflow-hidden w-64">
-          {vehicles.filter(v => v.status === 'Available').map(v => (
+          {available.map(v => {
+            const check = canVehicleCarryLoad(v, loadWeight);
+            return (
             <button
               key={v._id}
-              onClick={() => { onChange(v._id); setOpen(false); }}
-              className={`w-full text-left px-3 py-2.5 text-xs hover:bg-hover transition cursor-pointer border-none flex items-center justify-between
-                ${value === v._id ? 'bg-blue-500/10 text-blue-400' : 'text-gray-300'}`}
+              onClick={() => { if (check.ok) { onChange(v._id); setOpen(false); } }}
+              disabled={!check.ok}
+              className={`w-full text-left px-3 py-2.5 text-xs transition border-none flex items-center justify-between
+                ${!check.ok ? 'opacity-50 cursor-not-allowed bg-red-500/5 text-red-300' : 'hover:bg-hover cursor-pointer text-gray-300'}
+                ${value === v._id && check.ok ? 'bg-blue-500/10 text-blue-400' : ''}`}
             >
               <span className="flex items-center gap-2">
                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${VEHICLE_TYPE_STYLE[v.type]}`}>{v.type}</span>
                 <span>{v.name} · {v.plate}</span>
               </span>
-              <span className="text-gray-500">{v.capacity}</span>
+              <span className={check.ok ? 'text-gray-500' : 'text-red-400'}>{v.capacity}</span>
             </button>
-          ))}
-          {vehicles.filter(v => v.status === 'Available').length === 0 && (
+            );
+          })}
+          {available.length === 0 && (
             <p className="text-xs text-gray-600 px-3 py-3">No available vehicles</p>
           )}
         </div>
@@ -60,10 +67,21 @@ function TenderDetail({ tender, vehicles, onClose, onRespond }) {
   const [vehicle, setVehicle] = useState(tender.assignedVehicle?._id ?? null);
   const [loading, setLoading] = useState(false);
 
+  const selectedVehicle = vehicles.find(v => v._id === vehicle);
+  const capacityCheck = selectedVehicle
+    ? canVehicleCarryLoad(selectedVehicle, tender.weight)
+    : null;
+  const canAccept = vehicle && capacityCheck?.ok;
+
   const handleRespond = async (status) => {
+    if (status === 'Accepted' && !canAccept) return;
     setLoading(true);
     await onRespond(tender._id, status, vehicle);
     setLoading(false);
+  };
+
+  const handleVehicleChange = (id) => {
+    setVehicle(id);
   };
 
   const fmt = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
@@ -111,10 +129,15 @@ function TenderDetail({ tender, vehicles, onClose, onRespond }) {
 
           <div className="bg-input rounded-lg px-4 py-3">
             <p className="text-[10px] text-gray-500 mb-2">ASSIGN VEHICLE (990 Response)</p>
-            <VehicleDropdown value={vehicle} onChange={setVehicle} vehicles={vehicles} />
-            {vehicle && (
+            <VehicleDropdown value={vehicle} onChange={handleVehicleChange} vehicles={vehicles} loadWeight={tender.weight} />
+            {vehicle && capacityCheck?.ok && (
               <p className="text-[10px] text-green-400 mt-2 flex items-center gap-1">
                 <CheckCircle2 size={10} /> Vehicle assigned — ready to send 990 Accepted
+              </p>
+            )}
+            {vehicle && capacityCheck && !capacityCheck.ok && (
+              <p className="text-xs text-red-400 mt-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/30">
+                {capacityCheck.message}
               </p>
             )}
           </div>
@@ -131,10 +154,10 @@ function TenderDetail({ tender, vehicles, onClose, onRespond }) {
                 <XCircle size={12} /> Send 990 — Rejected
               </button>
               <button
-                disabled={!vehicle || loading}
+                disabled={!canAccept || loading}
                 onClick={() => handleRespond('Accepted')}
                 className={`flex items-center gap-1.5 text-xs px-4 py-2 rounded-lg font-medium transition cursor-pointer border-none
-                  ${vehicle && !loading ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-input text-gray-600 cursor-not-allowed'}`}
+                  ${canAccept && !loading ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-input text-gray-600 cursor-not-allowed'}`}
               >
                 <CheckCircle2 size={12} /> Send 990 — Accepted
               </button>
@@ -187,6 +210,7 @@ function LoadTenders() {
   const pending  = tenders.filter(t => t.status === 'Pending').length;
   const accepted = tenders.filter(t => t.status === 'Accepted').length;
   const rejected = tenders.filter(t => t.status === 'Rejected').length;
+  const availableTrucks = vehicles.filter(v => v.status === 'Available').length;
 
   const fmt = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
   const fmtTime = (d) => d ? new Date(d).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }) : '—';
@@ -222,6 +246,7 @@ function LoadTenders() {
             {pending > 0 && (
               <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">{pending} awaiting response</span>
             )}
+            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">{availableTrucks} trucks available</span>
           </div>
         </div>
 

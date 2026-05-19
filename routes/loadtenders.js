@@ -6,6 +6,7 @@ const Shipment = require('../models/Shipment');
 const Vehicle = require('../models/Vehicle');
 const auth = require('../middleware/auth');
 const { getPickupAndDeliveryDates } = require('../utils/dates');
+const { canVehicleCarryLoad } = require('../utils/capacity');
 const router = express.Router();
 
 // GET all — populated
@@ -70,20 +71,26 @@ router.post('/:id/respond', auth, async (req, res) => {
     if (!tender) return res.status(404).json({ message: 'Tender not found' });
     if (tender.status !== 'Pending') return res.status(400).json({ message: 'Already responded' });
 
-    tender.status = status;
-
     if (status === 'Accepted') {
+      if (!vehicleId) {
+        return res.status(400).json({ message: 'Vehicle is required to accept this load tender.' });
+      }
+      const vehicle = await Vehicle.findById(vehicleId);
+      if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
+
+      const capacityCheck = canVehicleCarryLoad(vehicle, tender.weight);
+      if (!capacityCheck.ok) {
+        return res.status(400).json({ message: capacityCheck.message });
+      }
+
       const { pickupDate, deliveryDate } = getPickupAndDeliveryDates();
       tender.pickupDate = pickupDate;
       tender.deliveryDate = deliveryDate;
-    }
-
-    if (status === 'Accepted' && vehicleId) {
+      tender.status = status;
       tender.assignedVehicle = vehicleId;
       await Vehicle.findByIdAndUpdate(vehicleId, { status: 'In Use' });
 
       const routeParts = tender.route.split(/\s*[-→]\s*/);
-      const sCount = await Shipment.countDocuments();
       await new Shipment({
         shipmentId:  tender.shipmentId,
         route:       tender.route,
@@ -94,7 +101,12 @@ router.post('/:id/respond', auth, async (req, res) => {
         tender:      tender._id,
         status:      'Pending',
       }).save();
+    } else if (status === 'Rejected') {
+      tender.status = status;
+    } else {
+      return res.status(400).json({ message: 'Invalid status' });
     }
+
     await tender.save();
 
     // Log outbound 990
