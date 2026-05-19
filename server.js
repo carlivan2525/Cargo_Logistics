@@ -24,7 +24,15 @@ app.get('/api/health', async (req, res) => {
     checks.dbConnected = true;
     res.json({ ok: true, ...checks });
   } catch (err) {
-    res.status(503).json({ ok: false, error: err.message, ...checks });
+    res.status(503).json({
+      ok: false,
+      error: err.message,
+      ...checks,
+      vercelEnv: process.env.VERCEL_ENV || null,
+      hint: !checks.mongoUri
+        ? 'Set MONGO_URI and JWT_SECRET on your Vercel project, enable Production, redeploy from repo root (not client/ only).'
+        : undefined,
+    });
   }
 });
 
