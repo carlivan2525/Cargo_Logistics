@@ -164,19 +164,19 @@ function Dashboard({ user, onLogout }) {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Topbar */}
-        <header className="flex items-center justify-between px-4 py-1.5 border-b border-app bg-card">
-          <span className="text-sm font-medium text-app">{activeNav}</span>
-          <div className="flex items-center gap-2">
+        <header className="flex items-center justify-between px-5 py-3 border-b border-app bg-card min-h-[52px]">
+          <span className="text-base font-semibold text-app">{activeNav}</span>
+          <div className="flex items-center gap-3">
             <button
               type="button"
               title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
               onClick={() => setTheme(isDark ? 'light' : 'dark')}
-              className={`relative w-11 h-6 rounded-full transition cursor-pointer border-none flex-shrink-0
+              className={`relative w-12 h-7 rounded-full transition cursor-pointer border-none flex-shrink-0
                 ${isDark ? 'bg-blue-600' : 'bg-gray-300'}`}
             >
-              <span className={`absolute top-0.5 w-5 h-5 rounded-full shadow transition-all flex items-center justify-center bg-white
-                ${isDark ? 'left-5' : 'left-0.5'}`}>
-                {isDark ? <Moon size={11} className="text-blue-600" /> : <Sun size={11} className="text-yellow-500" />}
+              <span className={`absolute top-0.5 w-6 h-6 rounded-full shadow transition-all flex items-center justify-center bg-white
+                ${isDark ? 'left-[22px]' : 'left-0.5'}`}>
+                {isDark ? <Moon size={13} className="text-blue-600" /> : <Sun size={13} className="text-yellow-500" />}
               </span>
             </button>
           </div>
