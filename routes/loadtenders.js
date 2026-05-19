@@ -1,5 +1,6 @@
 const express = require('express');
 const LoadTender = require('../models/LoadTender');
+const Partner = require('../models/Partner');
 const Transmission = require('../models/Transmission');
 const Shipment = require('../models/Shipment');
 const Vehicle = require('../models/Vehicle');
@@ -23,15 +24,33 @@ router.post('/', auth, async (req, res) => {
     const count = await LoadTender.countDocuments();
     const tCount = await Transmission.countDocuments();
 
-    const { pickupDate: bodyPickup, deliveryDate: bodyDelivery, ...rest } = req.body;
+    const {
+      route, weight, commodity, isaId,
+      shipmentId: bodyShipmentId,
+      pickupDate: bodyPickup,
+      deliveryDate: bodyDelivery,
+    } = req.body;
+
+    if (!isaId) return res.status(400).json({ message: 'isaId is required (e.g. SURPLUS)' });
+    if (!route) return res.status(400).json({ message: 'route is required' });
+
+    const partner = await Partner.findOne({ isaId: isaId.toUpperCase() });
+    if (!partner) {
+      return res.status(400).json({ message: `Partner not found for isaId: ${isaId}` });
+    }
+
     const defaultDates = getPickupAndDeliveryDates();
 
     const tender = new LoadTender({
       tenderId: `TND-${String(count + 1).padStart(4, '0')}`,
       ediRef:   `TRX-${String(tCount + 1).padStart(4, '0')}`,
+      partner: partner._id,
+      shipmentId: bodyShipmentId || `SHP-${Date.now()}`,
+      route,
+      weight: weight || '',
+      commodity: commodity || '',
       pickupDate: bodyPickup || defaultDates.pickupDate,
       deliveryDate: bodyDelivery || defaultDates.deliveryDate,
-      ...rest,
     });
     await tender.save();
 
@@ -43,7 +62,7 @@ router.post('/', auth, async (req, res) => {
       direction: 'IN',
       partner:   tender.partner,
       status:    'Received',
-      isaSegment: `ISA*00*...*ZZ*${req.body.isaId ?? 'PARTNER'}*${new Date().toISOString().slice(0,10).replace(/-/g,'')}*^*00501*${String(tCount+1).padStart(9,'0')}*0*P*>`,
+      isaSegment: `ISA*00*...*ZZ*${partner.isaId}*${new Date().toISOString().slice(0,10).replace(/-/g,'')}*^*00501*${String(tCount+1).padStart(9,'0')}*0*P*>`,
     }).save();
 
     res.status(201).json(await tender.populate('partner', 'name isaId'));
