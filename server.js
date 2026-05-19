@@ -11,8 +11,6 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-app.get('/', (req, res) => res.send('CarGO Backend is running!'));
-
 app.get('/api/health', async (req, res) => {
   const checks = {
     mongoUri: !!process.env.MONGO_URI,
