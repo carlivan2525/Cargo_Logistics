@@ -38,12 +38,13 @@ router.post('/', auth, (req, res, next) => {
       shipmentId: bodyShipmentId, rawEdi, isaSegment,
       pickupDate: rawPickup, deliveryDate: rawDelivery,
       carrierId, carrierName, carrierScac,
-      originAddress, destinationAddress,
+      originAddress,
+      _destinationForRoute: destinationForRoute,
     } = input;
 
     if (!isaId) return res.status(400).json({ message: 'isaId is required (e.g. SURPLUS) or send valid X12 in rawEdi' });
 
-    const routeFromCities = buildRoute(originAddress, destinationAddress);
+    const routeFromCities = buildRoute(originAddress, destinationForRoute);
     const finalRoute = routeFromCities || route;
     if (!finalRoute) {
       return res.status(400).json({
@@ -74,7 +75,6 @@ router.post('/', auth, (req, res, next) => {
       pickupDate,
       deliveryDate,
       originAddress,
-      destinationAddress,
       weight: weight || '',
       commodity: commodity || '',
       status: 'Pending',
@@ -139,13 +139,10 @@ router.post('/:id/respond', auth, async (req, res) => {
       tender.assignedVehicle = vehicleId;
 
       const o = tender.originAddress || {};
-      const d = tender.destinationAddress || {};
-      const shipmentRoute = buildRoute(o, d) || tender.route;
       await new Shipment({
         shipmentId:  tender.shipmentId,
-        route:       shipmentRoute,
+        route:       tender.route,
         origin:      o.city || '',
-        destination: d.city || '',
         partner:     tender.partner,
         vehicle:     vehicleId,
         tender:      tender._id,

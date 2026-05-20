@@ -55,7 +55,7 @@ function normalizeCustomer204(body) {
     pickupDate: body.pickupDate ?? body.scheduledPickupDate ?? base.pickupDate,
     deliveryDate: body.deliveryDate ?? body.estimatedDeliveryDate ?? base.deliveryDate,
     originAddress: origin,
-    destinationAddress: destination,
+    _destinationForRoute: destination,
   };
 }
 

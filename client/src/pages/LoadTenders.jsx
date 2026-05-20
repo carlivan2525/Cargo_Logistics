@@ -17,18 +17,6 @@ const STATUS_STYLE = {
 
 const dash = (v) => (v && String(v).trim() ? v : '—');
 
-function originSummary(o) {
-  if (!o) return '—';
-  const parts = [o.locationName, o.city].filter(Boolean);
-  return parts.length ? parts.join(' · ') : '—';
-}
-
-function destSummary(d) {
-  if (!d) return '—';
-  const parts = [d.facilityName, d.city].filter(Boolean);
-  return parts.length ? parts.join(' · ') : '—';
-}
-
 function DetailField({ label, value }) {
   return (
     <div>
@@ -137,7 +125,6 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
 
   const fmt = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
   const origin = tender.originAddress || {};
-  const dest = tender.destinationAddress || {};
 
   if (detailLoading) {
     return (
@@ -215,21 +202,6 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
               <DetailField label="ZIP code" value={origin.zipCode} />
               <DetailField label="Contact person" value={origin.contactPerson} />
               <DetailField label="Contact phone" value={origin.contactPhone} />
-            </div>
-          </Section>
-
-          <Section title="Destination address" subtitle="Customer 204 · destinationAddress">
-            <div className="rounded-lg border border-app bg-card/40 p-3 grid grid-cols-2 gap-3">
-              <DetailField label="Facility / consignee name" value={dest.facilityName} />
-              <DetailField label="Region" value={dest.region} />
-              <DetailField label="City / municipality" value={dest.city} />
-              <DetailField label="ZIP code" value={dest.zipCode} />
-              <DetailField label="Contact person" value={dest.contactPerson} />
-              <DetailField label="Contact phone" value={dest.contactPhone} />
-            </div>
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
-              <p className="text-[10px] text-amber-400/90 uppercase tracking-wide mb-1">Specific delivery instructions</p>
-              <p className="text-xs text-app whitespace-pre-wrap">{dash(dest.deliveryInstructions)}</p>
             </div>
           </Section>
 
@@ -374,8 +346,7 @@ function LoadTenders() {
                 <th className="text-left px-4 py-2.5 font-medium">SCAC</th>
                 <th className="text-left px-4 py-2.5 font-medium">Pickup</th>
                 <th className="text-left px-4 py-2.5 font-medium">Est. delivery</th>
-                <th className="text-left px-4 py-2.5 font-medium">Origin</th>
-                <th className="text-left px-4 py-2.5 font-medium">Destination</th>
+                <th className="text-left px-4 py-2.5 font-medium">Route</th>
                 <th className="text-left px-4 py-2.5 font-medium">990</th>
                 <th className="text-left px-4 py-2.5 font-medium">Received</th>
                 <th className="text-right px-4 py-2.5 font-medium">Action</th>
@@ -383,7 +354,7 @@ function LoadTenders() {
             </thead>
             <tbody>
               {tenders.length === 0 && (
-                <tr><td colSpan={12} className="text-center py-10 text-gray-600 text-sm">No load tenders yet.</td></tr>
+                <tr><td colSpan={11} className="text-center py-10 text-gray-600 text-sm">No load tenders yet.</td></tr>
               )}
               {tenders.map(t => (
                 <tr key={t._id} className="border-b border-subtle hover:bg-hover transition">
@@ -396,12 +367,7 @@ function LoadTenders() {
                   <td className="px-4 py-3 text-xs text-gray-500 font-mono">{dash(t.carrierScac)}</td>
                   <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{fmt(t.pickupDate)}</td>
                   <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{fmt(t.deliveryDate)}</td>
-                  <td className="px-4 py-3 text-xs text-gray-400 max-w-[140px] truncate" title={originSummary(t.originAddress)}>
-                    {originSummary(t.originAddress)}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-400 max-w-[140px] truncate" title={destSummary(t.destinationAddress)}>
-                    {destSummary(t.destinationAddress)}
-                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-300 whitespace-nowrap">{t.route}</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${STATUS_STYLE[t.status]}`}>{t.status}</span>
                   </td>

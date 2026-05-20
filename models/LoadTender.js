@@ -9,16 +9,6 @@ const originAddressSchema = new mongoose.Schema({
   contactPhone:   { type: String, default: '' },
 }, { _id: false });
 
-const destinationAddressSchema = new mongoose.Schema({
-  facilityName:          { type: String, default: '' },
-  region:                { type: String, default: '' },
-  city:                  { type: String, default: '' },
-  zipCode:               { type: String, default: '' },
-  contactPerson:         { type: String, default: '' },
-  contactPhone:          { type: String, default: '' },
-  deliveryInstructions:  { type: String, default: '' },
-}, { _id: false });
-
 const loadTenderSchema = new mongoose.Schema({
   tenderId:        { type: String, required: true, unique: true },
   ediRef:          { type: String },
@@ -32,7 +22,6 @@ const loadTenderSchema = new mongoose.Schema({
   pickupDate:      { type: Date, default: null },
   deliveryDate:    { type: Date, default: null },
   originAddress:   { type: originAddressSchema, default: () => ({}) },
-  destinationAddress: { type: destinationAddressSchema, default: () => ({}) },
   weight:          { type: String, default: '' },
   commodity:       { type: String, default: '' },
   status:          { type: String, enum: ['Pending', 'Accepted', 'Rejected'], default: 'Pending' },
