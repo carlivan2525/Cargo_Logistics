@@ -19,7 +19,7 @@ const STATUS_STYLE = {
 function VehicleDropdown({ value, onChange, vehicles, loadWeight }) {
   const [open, setOpen] = useState(false);
   const selected = vehicles.find(v => v._id === value);
-  const available = vehicles.filter(v => v.status === 'Available');
+  const fleet = vehicles;
 
   return (
     <div className="relative">
@@ -35,7 +35,7 @@ function VehicleDropdown({ value, onChange, vehicles, loadWeight }) {
       </button>
       {open && (
         <div className="absolute left-0 top-9 z-30 bg-elevated border border-app rounded-lg shadow-xl overflow-hidden w-64">
-          {available.map(v => {
+          {fleet.map(v => {
             const check = canVehicleCarryLoad(v, loadWeight);
             return (
             <button
@@ -54,8 +54,8 @@ function VehicleDropdown({ value, onChange, vehicles, loadWeight }) {
             </button>
             );
           })}
-          {available.length === 0 && (
-            <p className="text-xs text-gray-600 px-3 py-3">No available vehicles</p>
+          {fleet.length === 0 && (
+            <p className="text-xs text-gray-600 px-3 py-3">No vehicles in fleet</p>
           )}
         </div>
       )}
@@ -210,7 +210,7 @@ function LoadTenders() {
   const pending  = tenders.filter(t => t.status === 'Pending').length;
   const accepted = tenders.filter(t => t.status === 'Accepted').length;
   const rejected = tenders.filter(t => t.status === 'Rejected').length;
-  const availableTrucks = vehicles.filter(v => v.status === 'Available').length;
+  const fleetCount = vehicles.length;
 
   const fmt = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
   const fmtTime = (d) => d ? new Date(d).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }) : '—';
@@ -246,7 +246,7 @@ function LoadTenders() {
             {pending > 0 && (
               <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">{pending} awaiting response</span>
             )}
-            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">{availableTrucks} trucks available</span>
+            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">{fleetCount} trucks in fleet</span>
           </div>
         </div>
 
@@ -259,6 +259,7 @@ function LoadTenders() {
                 <th className="text-left px-5 py-2.5 font-medium">Shipment</th>
                 <th className="text-left px-5 py-2.5 font-medium">Route</th>
                 <th className="text-left px-5 py-2.5 font-medium">Pickup</th>
+                <th className="text-left px-5 py-2.5 font-medium">Delivery</th>
                 <th className="text-left px-5 py-2.5 font-medium">Weight</th>
                 <th className="text-left px-5 py-2.5 font-medium">Vehicle</th>
                 <th className="text-left px-5 py-2.5 font-medium">990 Status</th>
@@ -268,7 +269,7 @@ function LoadTenders() {
             </thead>
             <tbody>
               {tenders.length === 0 && (
-                <tr><td colSpan={10} className="text-center py-10 text-gray-600 text-sm">No load tenders yet.</td></tr>
+                <tr><td colSpan={11} className="text-center py-10 text-gray-600 text-sm">No load tenders yet.</td></tr>
               )}
               {tenders.map(t => {
                 const v = t.assignedVehicle;
@@ -279,6 +280,7 @@ function LoadTenders() {
                     <td className="px-5 py-3 font-mono text-xs text-gray-400">{t.shipmentId}</td>
                     <td className="px-5 py-3 text-xs text-gray-300">{t.route}</td>
                     <td className="px-5 py-3 text-xs text-gray-400">{fmt(t.pickupDate)}</td>
+                    <td className="px-5 py-3 text-xs text-gray-400">{fmt(t.deliveryDate)}</td>
                     <td className="px-5 py-3 text-xs text-gray-400">{t.weight || '—'}</td>
                     <td className="px-5 py-3">
                       {v ? (

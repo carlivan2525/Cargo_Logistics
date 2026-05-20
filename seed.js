@@ -34,9 +34,6 @@ async function seed() {
     { vehicleId: 'VH-003', name: 'Truck (10W)',  type: 'Truck',    plate: 'GHI 9012', capacity: '10T',  status: 'Available' },
     { vehicleId: 'VH-004', name: 'Truck (6W)',   type: 'Truck',    plate: 'JKL 3456', capacity: '6T',   status: 'Available' },
     { vehicleId: 'VH-005', name: 'Expander Van', type: 'Expander', plate: 'MNO 7890', capacity: '2T',   status: 'Available' },
-    { vehicleId: 'VH-006', name: 'Truck (12W)',  type: 'Truck',    plate: 'PQR 1111', capacity: '12T', status: 'Available' },
-    { vehicleId: 'VH-007', name: 'L300 Van',     type: 'L300',     plate: 'STU 2222', capacity: '3T',   status: 'Available' },
-    { vehicleId: 'VH-008', name: 'Truck (8W)',   type: 'Truck',    plate: 'VWX 3333', capacity: '8T',   status: 'Available' },
   ]);
   console.log('Vehicles seeded');
 

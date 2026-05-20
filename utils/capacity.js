@@ -15,9 +15,6 @@ function canVehicleCarryLoad(vehicle, loadWeight) {
   if (capacityTons == null) {
     return { ok: false, message: 'Cannot proceed: vehicle capacity is invalid.' };
   }
-  if (vehicle.status !== 'Available') {
-    return { ok: false, message: 'Cannot proceed: this vehicle is not available.' };
-  }
   if (loadTons > capacityTons) {
     return {
       ok: false,

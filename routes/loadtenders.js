@@ -43,6 +43,9 @@ router.post('/', auth, async (req, res) => {
       route,
       weight: weight || '',
       commodity: commodity || '',
+      pickupDate: null,
+      deliveryDate: null,
+      status: 'Pending',
     });
     await tender.save();
 
@@ -88,7 +91,6 @@ router.post('/:id/respond', auth, async (req, res) => {
       tender.deliveryDate = deliveryDate;
       tender.status = status;
       tender.assignedVehicle = vehicleId;
-      await Vehicle.findByIdAndUpdate(vehicleId, { status: 'In Use' });
 
       const routeParts = tender.route.split(/\s*[-→]\s*/);
       await new Shipment({
@@ -103,6 +105,8 @@ router.post('/:id/respond', auth, async (req, res) => {
       }).save();
     } else if (status === 'Rejected') {
       tender.status = status;
+      tender.pickupDate = null;
+      tender.deliveryDate = null;
     } else {
       return res.status(400).json({ message: 'Invalid status' });
     }

@@ -1,11 +1,11 @@
-/** Pickup = start of today (local). Delivery = pickup + 7 days. */
+/** Pickup = today (Philippines). Delivery = pickup + 7 days. */
 function getPickupAndDeliveryDates() {
-  const pickupDate = new Date();
-  pickupDate.setHours(0, 0, 0, 0);
-
+  const phNow = new Date(
+    new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' })
+  );
+  const pickupDate = new Date(phNow.getFullYear(), phNow.getMonth(), phNow.getDate());
   const deliveryDate = new Date(pickupDate);
   deliveryDate.setDate(deliveryDate.getDate() + 7);
-
   return { pickupDate, deliveryDate };
 }
 
