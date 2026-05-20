@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowUpDown, Send, Search, XCircle } from 'lucide-react';
+import { ArrowUpDown, Send, Search, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '../api';
 
 const STATUS_STYLE = {
@@ -10,20 +10,33 @@ const STATUS_STYLE = {
 };
 
 function Transmissions() {
-  const [transmissions, setTransmissions] = useState([]);
+  const [data, setData]                   = useState([]);
+  const [total, setTotal]                 = useState(0);
+  const [pages, setPages]                 = useState(1);
+  const [page, setPage]                   = useState(1);
   const [search, setSearch]               = useState('');
   const [filterDir, setFilterDir]         = useState('All');
   const [filterStatus, setFilterStatus]   = useState('All');
   const [loading, setLoading]             = useState(true);
 
-  useEffect(() => {
-    api.get('/transmissions')
-      .then(setTransmissions)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+  const load = async (p = 1) => {
+    setLoading(true);
+    try {
+      const res = await api.get(`/transmissions?page=${p}`);
+      setData(res.data);
+      setTotal(res.total);
+      setPages(res.pages);
+      setPage(p);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filtered = transmissions.filter(t => {
+  useEffect(() => { load(1); }, []);
+
+  const filtered = data.filter(t => {
     const matchSearch =
       t.transmissionId?.toLowerCase().includes(search.toLowerCase()) ||
       t.partner?.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -33,22 +46,16 @@ function Transmissions() {
     return matchSearch && matchDir && matchStatus;
   });
 
-  const sent     = transmissions.filter(t => t.status === 'Sent').length;
-  const received = transmissions.filter(t => t.status === 'Received').length;
-  const failed   = transmissions.filter(t => t.status === 'Failed').length;
-
   const fmtTime = d => d ? new Date(d).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }) : '—';
-
-  if (loading) return <div className="text-gray-500 text-sm py-10 text-center">Loading...</div>;
 
   return (
     <div className="space-y-4">
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Sent',     value: sent,     icon: Send,        color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20' },
-          { label: 'Received', value: received, icon: ArrowUpDown, color: 'text-blue-400',  bg: 'bg-blue-500/10 border-blue-500/20' },
-          { label: 'Failed',   value: failed,   icon: XCircle,     color: 'text-red-400',   bg: 'bg-red-500/10 border-red-500/20' },
+          { label: 'Total',    value: total,                                        icon: ArrowUpDown, color: 'text-blue-400',  bg: 'bg-blue-500/10 border-blue-500/20' },
+          { label: 'Sent',     value: data.filter(t => t.status==='Sent').length,    icon: Send,        color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20' },
+          { label: 'Received', value: data.filter(t => t.status==='Received').length,icon: ArrowUpDown, color: 'text-purple-400',bg: 'bg-purple-500/10 border-purple-500/20' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div key={label} className={`rounded-xl p-4 border ${bg} flex items-center gap-3`}>
             <Icon size={18} className={color} />
@@ -66,20 +73,14 @@ function Transmissions() {
           <div className="flex items-center gap-2">
             <ArrowUpDown size={14} className="text-gray-400" />
             <span className="font-semibold text-sm text-app">EDI Transmissions</span>
-            <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">
-              {transmissions.length} total
-            </span>
+            <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">{total} total</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 bg-input border border-app rounded-lg px-3 py-1.5">
               <Search size={12} className="text-gray-500" />
-              <input
-                type="text"
-                placeholder="Search..."
-                value={search}
+              <input type="text" placeholder="Search..." value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="bg-transparent text-xs text-gray-300 placeholder-gray-600 outline-none w-32"
-              />
+                className="bg-transparent text-xs text-gray-300 placeholder-gray-600 outline-none w-32" />
             </div>
             <select value={filterDir} onChange={e => setFilterDir(e.target.value)}
               className="bg-input border border-app text-xs text-gray-300 rounded-lg px-2 py-1.5 outline-none cursor-pointer">
@@ -110,7 +111,11 @@ function Transmissions() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(t => (
+              {loading ? (
+                <tr><td colSpan={8} className="text-center py-10 text-gray-600 text-sm">Loading...</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={8} className="text-center py-10 text-gray-600 text-sm">No transmissions found.</td></tr>
+              ) : filtered.map(t => (
                 <tr key={t._id} className="border-b border-subtle hover:bg-hover transition">
                   <td className="px-5 py-3 font-mono text-xs text-gray-400">{t.transmissionId}</td>
                   <td className="px-5 py-3">
@@ -131,12 +136,26 @@ function Transmissions() {
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && (
-                <tr><td colSpan={8} className="text-center py-10 text-gray-600 text-sm">No transmissions found.</td></tr>
-              )}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {pages > 1 && (
+          <div className="flex items-center justify-between px-5 py-3 border-t border-app">
+            <span className="text-xs text-gray-500">Page {page} of {pages}</span>
+            <div className="flex items-center gap-1">
+              <button onClick={() => load(page - 1)} disabled={page === 1}
+                className="p-1.5 rounded-lg bg-input border border-app text-gray-400 hover:text-app disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed transition">
+                <ChevronLeft size={13} />
+              </button>
+              <button onClick={() => load(page + 1)} disabled={page === pages}
+                className="p-1.5 rounded-lg bg-input border border-app text-gray-400 hover:text-app disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed transition">
+                <ChevronRight size={13} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   LayoutDashboard, Truck, FileText, Inbox,
   ArrowUpDown, Globe, Settings as SettingsIcon,
-  Moon, Sun,
-  LogOut, CheckCircle2, AlertTriangle, Package, FileCheck
+  Info, LogOut, CheckCircle2, AlertTriangle, Package, FileCheck
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import logo from '../assets/CarGO-logo.png';
@@ -11,6 +10,7 @@ import ShipmentsTable from './Shipments';
 import Invoices from './Invoices';
 import Transmissions from './Transmissions';
 import Partners from './Partners';
+import About from './About';
 import Settings from './Settings';
 import LoadTenders from './LoadTenders';
 import { api } from '../api';
@@ -36,6 +36,7 @@ const navSections = [
     title: 'SYSTEM',
     items: [
       { icon: SettingsIcon, label: 'Settings' },
+      { icon: Info,         label: 'About' },
     ],
   },
 ];
@@ -63,7 +64,8 @@ function Dashboard({ user, onLogout }) {
       api.get('/shipments'),
       api.get('/invoices'),
       api.get('/transmissions'),
-    ]).then(([tenders, shipments, invoices, transmissions]) => {
+    ]).then(([tenders, shipments, invoices, txRes]) => {
+      const transmissions = txRes.data ?? txRes;
       // Sidebar badges
       setCounts({
         tenders:   tenders.filter(t => t.status === 'Pending').length,
@@ -108,17 +110,19 @@ function Dashboard({ user, onLogout }) {
       {/* Sidebar */}
       <aside className="w-60 min-w-[240px] bg-card flex flex-col border-r border-app">
 
-        {/* Brand */}
+        {/* Brand — avatar + user */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-app">
-          <img src={logo} alt="CarGO Logo" className="h-12 w-auto object-contain" />
-          <p className="text-sm font-bold text-app">CarGO</p>
+          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-lg font-bold uppercase text-white flex-shrink-0">
+            {user?.[0] ?? 'U'}
+          </div>
+          <p className="text-sm font-semibold text-app capitalize tracking-wide">{user}</p>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
-          {navWithCounts.map(({ title, items }) => (
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+          {navWithCounts.map(({ title, items }, sectionIdx) => (
             <div key={title}>
-              <p className="text-[10px] font-semibold text-gray-500 tracking-widest px-2 mb-1.5">{title}</p>
+              {sectionIdx > 0 && <div className="border-t border-app my-2" />}
               <ul className="space-y-0.5">
                 {items.map(({ icon: Icon, label, badge, badgeRed, badgeYellow }) => (
                   <li key={label}>
@@ -142,21 +146,9 @@ function Dashboard({ user, onLogout }) {
           ))}
         </nav>
 
-        {/* User */}
-        <div className="px-4 py-3 border-t border-app flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold uppercase">
-              {user?.[0] ?? 'U'}
-            </div>
-            <span className="text-sm text-gray-300 truncate max-w-[110px]">{user}</span>
-          </div>
-          <button
-            onClick={onLogout}
-            title="Logout"
-            className="text-gray-500 hover:text-red-400 transition cursor-pointer bg-transparent border-none p-1 rounded"
-          >
-            <LogOut size={15} />
-          </button>
+        {/* Footer */}
+        <div className="px-4 py-3 border-t border-app text-center">
+          <p className="text-[10px] text-gray-600">© 2026 CarGO Logistics Services</p>
         </div>
       </aside>
 
@@ -164,22 +156,9 @@ function Dashboard({ user, onLogout }) {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Topbar */}
-        <header className="flex items-center justify-between px-5 py-3 border-b border-app bg-card min-h-[52px]">
+        <header className="flex items-center px-5 py-3 border-b border-app bg-card min-h-[52px] gap-3">
+          <img src={logo} alt="CarGO Logo" className="h-8 w-auto object-contain" />
           <span className="text-base font-semibold text-app">{activeNav}</span>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-              onClick={() => setTheme(isDark ? 'light' : 'dark')}
-              className={`relative w-12 h-7 rounded-full transition cursor-pointer border-none flex-shrink-0
-                ${isDark ? 'bg-blue-600' : 'bg-gray-300'}`}
-            >
-              <span className={`absolute top-0.5 w-6 h-6 rounded-full shadow transition-all flex items-center justify-center bg-white
-                ${isDark ? 'left-[22px]' : 'left-0.5'}`}>
-                {isDark ? <Moon size={13} className="text-blue-600" /> : <Sun size={13} className="text-yellow-500" />}
-              </span>
-            </button>
-          </div>
         </header>
 
         {/* Content */}
@@ -189,7 +168,8 @@ function Dashboard({ user, onLogout }) {
           {activeNav === 'Invoices'      && <Invoices />}
           {activeNav === 'Transmissions' && <Transmissions />}
           {activeNav === 'Partners'      && <Partners />}
-          {activeNav === 'Settings'      && <Settings />}
+          {activeNav === 'Settings'      && <Settings onLogout={onLogout} />}
+          {activeNav === 'About'         && <About />}
           {activeNav === 'Dashboard' && (<>
 
           {/* Stat Cards */}
