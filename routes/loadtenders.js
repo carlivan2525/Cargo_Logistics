@@ -178,28 +178,17 @@ router.post('/:id/respond', auth, async (req, res) => {
 
     // POST 990 acknowledgement to partner's system
     if (status === 'Accepted') {
-      const partner = await require('../models/Partner').findById(tender.partner);
-      const partnerName = partner?.name?.toLowerCase();
-
-      const WEBHOOK_990 = {
-        'surplus': 'https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-990',
-        'hiraya':  'https://ais-pre-4zjfmjru7xztdxeyxr4t3x-339518471300.asia-southeast1.run.app/api/edi/cargo/webhook',
-      };
-
-      const webhookUrl = WEBHOOK_990[partnerName];
-      if (webhookUrl) {
-        try {
-          await fetch(webhookUrl, {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({
-              shipmentId: tender.shipmentId,
-              status:     'ACCEPTED',
-            }),
-          });
-        } catch (webhookErr) {
-          console.error(`990 POST to ${partnerName} failed:`, webhookErr.message);
-        }
+      try {
+        await fetch('https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-990', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            shipmentId: tender.shipmentId,
+            status:     'ACCEPTED',
+          }),
+        });
+      } catch (webhookErr) {
+        console.error('990 POST to partner failed:', webhookErr.message);
       }
     }
 
