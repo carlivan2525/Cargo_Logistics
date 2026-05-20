@@ -139,15 +139,22 @@ router.post('/:id/respond', auth, async (req, res) => {
       tender.assignedVehicle = vehicleId;
 
       const o = tender.originAddress || {};
-      await new Shipment({
-        shipmentId:  tender.shipmentId,
-        route:       tender.route,
-        origin:      o.city || '',
-        partner:     tender.partner,
-        vehicle:     vehicleId,
-        tender:      tender._id,
-        status:      'Pending',
-      }).save();
+      const existingShipment = await Shipment.findOne({ shipmentId: tender.shipmentId });
+      if (!existingShipment) {
+        await new Shipment({
+          shipmentId:  tender.shipmentId,
+          route:       tender.route,
+          origin:      o.city || '',
+          partner:     tender.partner,
+          vehicle:     vehicleId,
+          tender:      tender._id,
+          status:      'Pending',
+        }).save();
+      } else {
+        existingShipment.vehicle = vehicleId;
+        existingShipment.tender  = tender._id;
+        await existingShipment.save();
+      }
     } else if (status === 'Rejected') {
       tender.status = status;
     } else {
@@ -168,6 +175,33 @@ router.post('/:id/respond', auth, async (req, res) => {
       isaSegment: `ISA*00*...*ZZ*CARGO*${new Date().toISOString().slice(0,10).replace(/-/g,'')}*^*00501*${trx990.replace('TRX-', '').padStart(9, '0')}*0*P*>`,
       payload:   JSON.stringify({ tenderRef: tender.tenderId, response: status }),
     }).save();
+
+    // POST 990 acknowledgement to partner's system
+    if (status === 'Accepted') {
+      const partner = await require('../models/Partner').findById(tender.partner);
+      const partnerName = partner?.name?.toLowerCase();
+
+      const WEBHOOK_990 = {
+        'surplus': 'https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-990',
+        'hiraya':  'https://ais-pre-4zjfmjru7xztdxeyxr4t3x-339518471300.asia-southeast1.run.app/api/edi/cargo/webhook',
+      };
+
+      const webhookUrl = WEBHOOK_990[partnerName];
+      if (webhookUrl) {
+        try {
+          await fetch(webhookUrl, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({
+              shipmentId: tender.shipmentId,
+              status:     'ACCEPTED',
+            }),
+          });
+        } catch (webhookErr) {
+          console.error(`990 POST to ${partnerName} failed:`, webhookErr.message);
+        }
+      }
+    }
 
     res.json(await tender.populate(['partner', 'assignedVehicle']));
   } catch (err) {

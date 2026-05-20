@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Truck, CheckCircle2, Clock, Package, ChevronDown, AlertCircle } from 'lucide-react';
 import { api } from '../api';
+import { useToast } from '../components/Toast';
 
 const STATUS_OPTIONS = ['Pending', 'Pickup', 'In Transit', 'Delivered', 'Exception'];
 
@@ -182,6 +183,7 @@ function ShipmentsTable() {
   const [error, setError]         = useState(null);
   const [pending, setPending]     = useState(null);
   const [saving, setSaving]       = useState(false);
+  const { show: showToast, node: toastNode } = useToast();
 
   const load = async () => {
     try {
@@ -214,8 +216,9 @@ function ShipmentsTable() {
       const updated = await api.put(`/shipments/${pending.id}/status`, { status: pending.to });
       setShipments(prev => prev.map(s => s._id === pending.id ? updated : s));
       setPending(null);
+      showToast(`Status updated to ${pending.to} — EDI 214 sent.`, 'success');
     } catch (err) {
-      alert(err.message);
+      showToast(err.message, 'error');
     } finally {
       setSaving(false);
     }
@@ -232,6 +235,7 @@ function ShipmentsTable() {
       onConfirm={confirmStatusChange}
       onCancel={() => !saving && setPending(null)}
     />
+    {toastNode}
     <div className="bg-card rounded-xl border border-app overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-app">
         <div className="flex items-center gap-2">

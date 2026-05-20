@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Inbox, Truck, CheckCircle2, XCircle, Clock, ChevronDown } from 'lucide-react';
 import { api } from '../api';
 import { canVehicleCarryLoad } from '../utils/capacity';
+import { useToast } from '../components/Toast';
 
 const VEHICLE_TYPE_STYLE = {
   'L300':     'bg-blue-500/20 text-blue-400',
@@ -266,6 +267,7 @@ function LoadTenders() {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
+  const { show: showToast, node: toastNode } = useToast();
 
   const load = async () => {
     try {
@@ -289,8 +291,12 @@ function LoadTenders() {
       await api.post(`/loadtenders/${id}/respond`, { status, vehicleId });
       await load();
       setSelected(null);
+      showToast(
+        status === 'Accepted' ? '990 Accepted — shipment created successfully.' : '990 Rejected — tender declined.',
+        status === 'Accepted' ? 'success' : 'error'
+      );
     } catch (err) {
-      alert(err.message);
+      showToast(err.message, 'error');
     }
   };
 
@@ -397,6 +403,7 @@ function LoadTenders() {
           onRespond={handleRespond}
         />
       )}
+      {toastNode}
     </div>
   );
 }

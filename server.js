@@ -46,6 +46,7 @@ app.use('/api', async (req, res, next) => {
   }
 });
 
+app.use('/api/edi',           require('./routes/edi'));
 app.use('/api/auth',          require('./routes/auth'));
 app.use('/api/partners',      require('./routes/partners'));
 app.use('/api/vehicles',      require('./routes/vehicles'));
