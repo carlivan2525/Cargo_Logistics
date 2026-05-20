@@ -12,7 +12,13 @@ function parseEdi204(raw) {
     throw new Error('Not valid X12 (expected ISA segment)');
   }
 
-  const segments = raw.split('~').map((s) => s.trim()).filter(Boolean);
+  const segments = raw.replace(/\r\n/g, '').replace(/\n/g, '').split('~').map((s) => s.trim()).filter(Boolean);
+
+  const l11Value = (el) => {
+    const description = (el[3] || '').trim();
+    if (description) return description;
+    return (el[2] || '').trim();
+  };
   const out = {
     isaId: null,
     shipmentId: null,
@@ -45,7 +51,7 @@ function parseEdi204(raw) {
 
     if (id === 'L11') {
       const ref = (el[1] || '').toUpperCase();
-      const val = (el[2] || '').trim();
+      const val = l11Value(el);
       if (ref === 'BM' || ref === 'SI') out.shipmentId = val || out.shipmentId;
       if (ref === 'RT' || ref === 'RO') out.route = val || out.route;
       if (ref === 'CN' || ref === 'CO') out.commodity = val || out.commodity;
