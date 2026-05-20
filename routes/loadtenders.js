@@ -7,6 +7,8 @@ const Vehicle = require('../models/Vehicle');
 const auth = require('../middleware/auth');
 const { getPickupAndDeliveryDates } = require('../utils/dates');
 const { canVehicleCarryLoad } = require('../utils/capacity');
+const { normalize204Input } = require('../utils/edi204Parser');
+const { nextSequentialId } = require('../utils/ids');
 const router = express.Router();
 
 // GET all — populated
@@ -19,15 +21,21 @@ router.get('/', auth, async (req, res) => {
   } catch { res.status(500).json({ message: 'Server error' }); }
 });
 
-// POST create (simulate receiving a 204)
-router.post('/', auth, async (req, res) => {
+// Plain-text X12 body → { rawEdi } (JSON clients unchanged)
+router.post('/', auth, (req, res, next) => {
+  if (typeof req.body === 'string' && req.body.includes('ISA*')) {
+    req.body = { rawEdi: req.body };
+  }
+  next();
+}, async (req, res) => {
   try {
-    const count = await LoadTender.countDocuments();
-    const tCount = await Transmission.countDocuments();
+    const tenderId = await nextSequentialId(LoadTender, 'tenderId', 'TND');
+    const trxId = await nextSequentialId(Transmission, 'transmissionId', 'TRX');
 
-    const { route, weight, commodity, isaId, shipmentId: bodyShipmentId } = req.body;
+    const input = normalize204Input(req.body);
+    const { route, weight, commodity, isaId, shipmentId: bodyShipmentId, rawEdi, isaSegment } = input;
 
-    if (!isaId) return res.status(400).json({ message: 'isaId is required (e.g. SURPLUS)' });
+    if (!isaId) return res.status(400).json({ message: 'isaId is required (e.g. SURPLUS) or send valid X12 in rawEdi' });
     if (!route) return res.status(400).json({ message: 'route is required' });
 
     const partner = await Partner.findOne({ isaId: isaId.toUpperCase() });
@@ -36,8 +44,8 @@ router.post('/', auth, async (req, res) => {
     }
 
     const tender = new LoadTender({
-      tenderId: `TND-${String(count + 1).padStart(4, '0')}`,
-      ediRef:   `TRX-${String(tCount + 1).padStart(4, '0')}`,
+      tenderId,
+      ediRef: trxId,
       partner: partner._id,
       shipmentId: bodyShipmentId || `SHP-${Date.now()}`,
       route,
@@ -46,18 +54,19 @@ router.post('/', auth, async (req, res) => {
       pickupDate: null,
       deliveryDate: null,
       status: 'Pending',
+      rawEdi: rawEdi || null,
     });
     await tender.save();
 
     // Log the inbound 204 transmission
     await new Transmission({
-      transmissionId: `TRX-${String(tCount + 1).padStart(4, '0')}`,
+      transmissionId: trxId,
       ediCode:   '204',
       label:     'Load Tender',
       direction: 'IN',
       partner:   tender.partner,
       status:    'Received',
-      isaSegment: `ISA*00*...*ZZ*${partner.isaId}*${new Date().toISOString().slice(0,10).replace(/-/g,'')}*^*00501*${String(tCount+1).padStart(9,'0')}*0*P*>`,
+      isaSegment: isaSegment || `ISA*00*...*ZZ*${partner.isaId}*${new Date().toISOString().slice(0,10).replace(/-/g,'')}*^*00501*${trxId.replace('TRX-', '').padStart(9, '0')}*0*P*>`,
     }).save();
 
     res.status(201).json(await tender.populate('partner', 'name isaId'));
@@ -114,15 +123,15 @@ router.post('/:id/respond', auth, async (req, res) => {
     await tender.save();
 
     // Log outbound 990
-    const tCount = await Transmission.countDocuments();
+    const trx990 = await nextSequentialId(Transmission, 'transmissionId', 'TRX');
     await new Transmission({
-      transmissionId: `TRX-${String(tCount + 1).padStart(4, '0')}`,
+      transmissionId: trx990,
       ediCode:   '990',
       label:     'LT Response',
       direction: 'OUT',
       partner:   tender.partner,
       status:    'Sent',
-      isaSegment: `ISA*00*...*ZZ*CARGO*${new Date().toISOString().slice(0,10).replace(/-/g,'')}*^*00501*${String(tCount+1).padStart(9,'0')}*0*P*>`,
+      isaSegment: `ISA*00*...*ZZ*CARGO*${new Date().toISOString().slice(0,10).replace(/-/g,'')}*^*00501*${trx990.replace('TRX-', '').padStart(9, '0')}*0*P*>`,
       payload:   JSON.stringify({ tenderRef: tender.tenderId, response: status }),
     }).save();
 

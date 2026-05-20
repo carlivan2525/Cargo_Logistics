@@ -9,7 +9,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
+app.use(express.text({ type: ['text/plain', 'application/edi-x12'], limit: '2mb' }));
 
 app.get('/api/health', async (req, res) => {
   const checks = {
