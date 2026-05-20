@@ -98,9 +98,29 @@ function VehicleDropdown({ value, onChange, vehicles, loadWeight }) {
   );
 }
 
-function TenderDetail({ tender, vehicles, onClose, onRespond }) {
-  const [vehicle, setVehicle] = useState(tender.assignedVehicle?._id ?? null);
+function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
+  const [tender, setTender] = useState(initialTender);
+  const [detailLoading, setDetailLoading] = useState(true);
+  const [vehicle, setVehicle] = useState(initialTender.assignedVehicle?._id ?? null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const fresh = await api.get(`/loadtenders/${initialTender._id}`);
+        if (!cancelled) {
+          setTender(fresh);
+          setVehicle(fresh.assignedVehicle?._id ?? null);
+        }
+      } catch {
+        if (!cancelled) setTender(initialTender);
+      } finally {
+        if (!cancelled) setDetailLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [initialTender._id]);
 
   const selectedVehicle = vehicles.find(v => v._id === vehicle);
   const capacityCheck = selectedVehicle
@@ -116,12 +136,20 @@ function TenderDetail({ tender, vehicles, onClose, onRespond }) {
   };
 
   const fmt = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
-  const o = tender.originAddress || {};
-  const d = tender.destinationAddress || {};
+  const origin = tender.originAddress || {};
+  const dest = tender.destinationAddress || {};
+
+  if (detailLoading) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="bg-card border border-app rounded-2xl px-8 py-6 text-sm text-gray-400">Loading 204 details…</div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-card border border-app rounded-2xl w-full max-w-2xl max-h-[90vh] shadow-2xl flex flex-col">
+      <div className="bg-card border border-app rounded-2xl w-full max-w-3xl max-h-[92vh] shadow-2xl flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-app shrink-0">
           <div className="flex items-center gap-2 flex-wrap">
             <Inbox size={15} className="text-blue-400" />
@@ -135,6 +163,22 @@ function TenderDetail({ tender, vehicles, onClose, onRespond }) {
         </div>
 
         <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+          <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+            <div>
+              <p className="text-[10px] text-gray-500">ORDER</p>
+              <p className="font-mono text-sm font-semibold text-app">{dash(tender.orderId)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-500">SHIPMENT</p>
+              <p className="font-mono text-sm text-app">{tender.shipmentId}</p>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] text-gray-500">ROUTE</p>
+              <p className="text-sm text-app truncate">{tender.route}</p>
+            </div>
+            <span className={`text-xs px-2.5 py-1 rounded-full ${STATUS_STYLE[tender.status]}`}>{tender.status}</span>
+          </div>
+
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="bg-input rounded-lg px-4 py-3">
               <p className="text-[10px] text-gray-500 mb-1">PARTNER</p>
@@ -142,9 +186,9 @@ function TenderDetail({ tender, vehicles, onClose, onRespond }) {
               <p className="text-xs text-gray-500 font-mono mt-0.5">{tender.ediRef}</p>
             </div>
             <div className="bg-input rounded-lg px-4 py-3">
-              <p className="text-[10px] text-gray-500 mb-1">SHIPMENT</p>
-              <p className="font-semibold text-app font-mono text-sm">{tender.shipmentId}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{tender.route}</p>
+              <p className="text-[10px] text-gray-500 mb-1">TENDER REF</p>
+              <p className="font-semibold text-app font-mono text-sm">{tender.tenderId}</p>
+              <p className="text-xs text-gray-500 mt-0.5">EDI 204 inbound</p>
             </div>
           </div>
 
@@ -163,37 +207,38 @@ function TenderDetail({ tender, vehicles, onClose, onRespond }) {
             </div>
           </Section>
 
-          <Section title="Origin address (warehouse)" subtitle="From customer dispatch">
-            <div className="grid grid-cols-2 gap-3">
-              <DetailField label="Location name" value={o.locationName} />
-              <DetailField label="Region" value={o.region} />
-              <DetailField label="City / municipality" value={o.city} />
-              <DetailField label="ZIP code" value={o.zipCode} />
-              <DetailField label="Contact person" value={o.contactPerson} />
-              <DetailField label="Contact phone" value={o.contactPhone} />
+          <Section title="Origin address (warehouse)" subtitle="Customer 204 · originAddress">
+            <div className="rounded-lg border border-app bg-card/40 p-3 grid grid-cols-2 gap-3">
+              <DetailField label="Location name" value={origin.locationName} />
+              <DetailField label="Region" value={origin.region} />
+              <DetailField label="City / municipality" value={origin.city} />
+              <DetailField label="ZIP code" value={origin.zipCode} />
+              <DetailField label="Contact person" value={origin.contactPerson} />
+              <DetailField label="Contact phone" value={origin.contactPhone} />
             </div>
           </Section>
 
-          <Section title="Destination address" subtitle="From ASN / PO">
-            <div className="grid grid-cols-2 gap-3">
-              <DetailField label="Facility / consignee" value={d.facilityName} />
-              <DetailField label="Region" value={d.region} />
-              <DetailField label="City / municipality" value={d.city} />
-              <DetailField label="ZIP code" value={d.zipCode} />
-              <DetailField label="Contact person" value={d.contactPerson} />
-              <DetailField label="Contact phone" value={d.contactPhone} />
+          <Section title="Destination address" subtitle="Customer 204 · destinationAddress">
+            <div className="rounded-lg border border-app bg-card/40 p-3 grid grid-cols-2 gap-3">
+              <DetailField label="Facility / consignee name" value={dest.facilityName} />
+              <DetailField label="Region" value={dest.region} />
+              <DetailField label="City / municipality" value={dest.city} />
+              <DetailField label="ZIP code" value={dest.zipCode} />
+              <DetailField label="Contact person" value={dest.contactPerson} />
+              <DetailField label="Contact phone" value={dest.contactPhone} />
             </div>
-            <DetailField label="Delivery instructions" value={d.deliveryInstructions} />
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+              <p className="text-[10px] text-amber-400/90 uppercase tracking-wide mb-1">Specific delivery instructions</p>
+              <p className="text-xs text-app whitespace-pre-wrap">{dash(dest.deliveryInstructions)}</p>
+            </div>
           </Section>
 
-          {(tender.weight || tender.commodity) && (
-            <Section title="Load">
-              <div className="grid grid-cols-2 gap-3">
-                <DetailField label="Weight" value={tender.weight} />
-                <DetailField label="Commodity" value={tender.commodity} />
-              </div>
-            </Section>
-          )}
+          <Section title="Load">
+            <div className="grid grid-cols-2 gap-3">
+              <DetailField label="Weight" value={tender.weight} />
+              <DetailField label="Commodity" value={tender.commodity} />
+            </div>
+          </Section>
 
           <div className="bg-input rounded-lg px-4 py-3">
             <p className="text-[10px] text-gray-500 mb-2 uppercase tracking-wide">Assign vehicle (990 response)</p>

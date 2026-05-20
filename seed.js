@@ -48,7 +48,7 @@ async function seed() {
       partner:      surplus,
       shipmentId:   'SHP-0519-001',
       orderId:      'ORD-679865',
-      route:        'Manila - dfg',
+      route:        'Manila - Quezon City',
       carrierId:    '2GO',
       carrierName:  '2GO Freight',
       carrierScac:  'TGOF',
@@ -65,7 +65,7 @@ async function seed() {
       destinationAddress: {
         facilityName:         'dfg',
         region:                 '',
-        city:                   '',
+        city:                   'Quezon City',
         zipCode:                '',
         contactPerson:          'Maria Santos',
         contactPhone:           '09281234567',

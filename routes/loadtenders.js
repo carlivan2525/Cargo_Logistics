@@ -7,7 +7,7 @@ const Vehicle = require('../models/Vehicle');
 const auth = require('../middleware/auth');
 const { getPickupAndDeliveryDates, parseDateInput } = require('../utils/dates');
 const { canVehicleCarryLoad } = require('../utils/capacity');
-const { normalizeCustomer204 } = require('../utils/normalize204');
+const { normalizeCustomer204, buildRoute } = require('../utils/normalize204');
 const { nextSequentialId } = require('../utils/ids');
 const router = express.Router();
 
@@ -42,7 +42,14 @@ router.post('/', auth, (req, res, next) => {
     } = input;
 
     if (!isaId) return res.status(400).json({ message: 'isaId is required (e.g. SURPLUS) or send valid X12 in rawEdi' });
-    if (!route) return res.status(400).json({ message: 'route is required (or send origin/destination city)' });
+
+    const routeFromCities = buildRoute(originAddress, destinationAddress);
+    const finalRoute = routeFromCities || route;
+    if (!finalRoute) {
+      return res.status(400).json({
+        message: 'Route requires originAddress.city and destinationAddress.city (e.g. Manila - Cebu)',
+      });
+    }
 
     const pickupDate = parseDateInput(rawPickup);
     const deliveryDate = parseDateInput(rawDelivery);
@@ -60,7 +67,7 @@ router.post('/', auth, (req, res, next) => {
       partner: partner._id,
       orderId: orderId || undefined,
       shipmentId: bodyShipmentId || `SHP-${Date.now()}`,
-      route,
+      route: finalRoute,
       carrierId,
       carrierName,
       carrierScac,
@@ -90,6 +97,17 @@ router.post('/', auth, (req, res, next) => {
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
+});
+
+// GET one — full 204 detail for modal
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const tender = await LoadTender.findById(req.params.id)
+      .populate('partner', 'name isaId')
+      .populate('assignedVehicle', 'vehicleId name type plate capacity');
+    if (!tender) return res.status(404).json({ message: 'Tender not found' });
+    res.json(tender);
+  } catch { res.status(500).json({ message: 'Server error' }); }
 });
 
 // POST respond — send 990
@@ -122,13 +140,12 @@ router.post('/:id/respond', auth, async (req, res) => {
 
       const o = tender.originAddress || {};
       const d = tender.destinationAddress || {};
-      const originLabel = o.locationName || o.city || tender.route.split(/\s*[-→]\s*/)[0]?.trim();
-      const destLabel = d.facilityName || d.city || tender.route.split(/\s*[-→]\s*/)[1]?.trim();
+      const shipmentRoute = buildRoute(o, d) || tender.route;
       await new Shipment({
         shipmentId:  tender.shipmentId,
-        route:       tender.route,
-        origin:      originLabel,
-        destination: destLabel,
+        route:       shipmentRoute,
+        origin:      o.city || '',
+        destination: d.city || '',
         partner:     tender.partner,
         vehicle:     vehicleId,
         tender:      tender._id,

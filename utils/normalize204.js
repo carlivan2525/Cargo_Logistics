@@ -25,11 +25,12 @@ function pickAddress(body, prefix, keys) {
   );
 }
 
+/** Route = origin city → destination city (customer rule) */
 function buildRoute(origin, destination) {
-  const from = str(origin.city) || str(origin.locationName);
-  const to = str(destination.city) || str(destination.facilityName);
+  const from = str(origin?.city);
+  const to = str(destination?.city);
   if (from && to) return `${from} - ${to}`;
-  return from || to || '';
+  return '';
 }
 
 /** Full customer 204 payload → internal shape */
@@ -43,7 +44,7 @@ function normalizeCustomer204(body) {
     'facilityName', 'region', 'city', 'zipCode', 'contactPerson', 'contactPhone', 'deliveryInstructions',
   ]);
 
-  const route = str(base.route) || buildRoute(origin, destination);
+  const route = buildRoute(origin, destination) || str(base.route);
 
   return {
     ...base,
