@@ -21,10 +21,13 @@ function parseEdi204(raw) {
   };
   const out = {
     isaId: null,
+    orderId: null,
     shipmentId: null,
     route: null,
     weight: null,
     commodity: null,
+    pickupDate: null,
+    deliveryDate: null,
     isaSegment: segments.find((s) => s.startsWith('ISA*')) || null,
   };
 
@@ -53,6 +56,7 @@ function parseEdi204(raw) {
       const ref = (el[1] || '').toUpperCase();
       const val = l11Value(el);
       if (ref === 'BM' || ref === 'SI') out.shipmentId = val || out.shipmentId;
+      if (ref === 'ON' || ref === 'PO') out.orderId = val || out.orderId;
       if (ref === 'RT' || ref === 'RO') out.route = val || out.route;
       if (ref === 'CN' || ref === 'CO') out.commodity = val || out.commodity;
     }
@@ -63,7 +67,17 @@ function parseEdi204(raw) {
     }
 
     if (id === 'G62' && el[2]) {
-      // Dates ignored on 204 receive — set on 990 accept
+      const code = (el[1] || '').trim();
+      const raw = (el[2] || '').trim();
+      if (raw.length === 8) {
+        const d = new Date(
+          `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`
+        );
+        if (!Number.isNaN(d.getTime())) {
+          if (code === '10' || code === '37') out.pickupDate = d;
+          if (code === '68' || code === '17') out.deliveryDate = d;
+        }
+      }
     }
   }
 
@@ -87,10 +101,13 @@ function normalize204Input(body) {
     const parsed = parseEdi204(body.rawEdi);
     return {
       isaId: body.isaId || parsed.isaId,
+      orderId: body.orderId || parsed.orderId,
       route: body.route || parsed.route,
       weight: body.weight || parsed.weight || '',
       commodity: body.commodity || parsed.commodity || '',
       shipmentId: body.shipmentId || parsed.shipmentId,
+      pickupDate: body.pickupDate ?? body.scheduledPickupDate ?? parsed.pickupDate,
+      deliveryDate: body.deliveryDate ?? body.estimatedDeliveryDate ?? parsed.deliveryDate,
       rawEdi: body.rawEdi,
       isaSegment: parsed.isaSegment,
     };
@@ -98,10 +115,13 @@ function normalize204Input(body) {
 
   return {
     isaId: body.isaId,
+    orderId: body.orderId,
     route: body.route,
     weight: body.weight || '',
     commodity: body.commodity || '',
     shipmentId: body.shipmentId,
+    pickupDate: body.pickupDate ?? body.scheduledPickupDate ?? null,
+    deliveryDate: body.deliveryDate ?? body.estimatedDeliveryDate ?? null,
     rawEdi: body.rawEdi || null,
     isaSegment: null,
   };

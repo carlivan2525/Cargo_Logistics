@@ -15,15 +15,49 @@ const STATUS_STYLE = {
   'Rejected': 'bg-red-500/20 text-red-400',
 };
 
-// Modal to simulate an incoming EDI 204 from a partner
+const dash = (v) => (v && String(v).trim() ? v : '—');
+
+function originSummary(o) {
+  if (!o) return '—';
+  const parts = [o.locationName, o.city].filter(Boolean);
+  return parts.length ? parts.join(' · ') : '—';
+}
+
+function destSummary(d) {
+  if (!d) return '—';
+  const parts = [d.facilityName, d.city].filter(Boolean);
+  return parts.length ? parts.join(' · ') : '—';
+}
+
+function DetailField({ label, value }) {
+  return (
+    <div>
+      <p className="text-[10px] text-gray-500 uppercase tracking-wide">{label}</p>
+      <p className="text-xs text-app mt-0.5 break-words">{dash(value)}</p>
+    </div>
+  );
+}
+
+function Section({ title, subtitle, children }) {
+  return (
+    <div className="bg-input rounded-lg px-4 py-3 space-y-3">
+      <div>
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{title}</p>
+        {subtitle && <p className="text-[10px] text-gray-600 mt-0.5">{subtitle}</p>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function VehicleDropdown({ value, onChange, vehicles, loadWeight }) {
   const [open, setOpen] = useState(false);
   const selected = vehicles.find(v => v._id === value);
-  const fleet = vehicles;
 
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={() => setOpen(o => !o)}
         className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-hover border border-app text-gray-300 hover:bg-white/15 transition cursor-pointer min-w-[180px] justify-between"
       >
@@ -35,26 +69,27 @@ function VehicleDropdown({ value, onChange, vehicles, loadWeight }) {
       </button>
       {open && (
         <div className="absolute left-0 top-9 z-30 bg-elevated border border-app rounded-lg shadow-xl overflow-hidden w-64">
-          {fleet.map(v => {
+          {vehicles.map(v => {
             const check = canVehicleCarryLoad(v, loadWeight);
             return (
-            <button
-              key={v._id}
-              onClick={() => { if (check.ok) { onChange(v._id); setOpen(false); } }}
-              disabled={!check.ok}
-              className={`w-full text-left px-3 py-2.5 text-xs transition border-none flex items-center justify-between
-                ${!check.ok ? 'opacity-50 cursor-not-allowed bg-red-500/5 text-red-300' : 'hover:bg-hover cursor-pointer text-gray-300'}
-                ${value === v._id && check.ok ? 'bg-blue-500/10 text-blue-400' : ''}`}
-            >
-              <span className="flex items-center gap-2">
-                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${VEHICLE_TYPE_STYLE[v.type]}`}>{v.type}</span>
-                <span>{v.name} · {v.plate}</span>
-              </span>
-              <span className={check.ok ? 'text-gray-500' : 'text-red-400'}>{v.capacity}</span>
-            </button>
+              <button
+                key={v._id}
+                type="button"
+                onClick={() => { if (check.ok) { onChange(v._id); setOpen(false); } }}
+                disabled={!check.ok}
+                className={`w-full text-left px-3 py-2.5 text-xs transition border-none flex items-center justify-between
+                  ${!check.ok ? 'opacity-50 cursor-not-allowed bg-red-500/5 text-red-300' : 'hover:bg-hover cursor-pointer text-gray-300'}
+                  ${value === v._id && check.ok ? 'bg-blue-500/10 text-blue-400' : ''}`}
+              >
+                <span className="flex items-center gap-2">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${VEHICLE_TYPE_STYLE[v.type]}`}>{v.type}</span>
+                  <span>{v.name} · {v.plate}</span>
+                </span>
+                <span className={check.ok ? 'text-gray-500' : 'text-red-400'}>{v.capacity}</span>
+              </button>
             );
           })}
-          {fleet.length === 0 && (
+          {vehicles.length === 0 && (
             <p className="text-xs text-gray-600 px-3 py-3">No vehicles in fleet</p>
           )}
         </div>
@@ -80,59 +115,92 @@ function TenderDetail({ tender, vehicles, onClose, onRespond }) {
     setLoading(false);
   };
 
-  const handleVehicleChange = (id) => {
-    setVehicle(id);
-  };
-
   const fmt = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+  const o = tender.originAddress || {};
+  const d = tender.destinationAddress || {};
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-card border border-app rounded-2xl w-[520px] shadow-2xl">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-app">
-          <div className="flex items-center gap-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-card border border-app rounded-2xl w-full max-w-2xl max-h-[90vh] shadow-2xl flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-app shrink-0">
+          <div className="flex items-center gap-2 flex-wrap">
             <Inbox size={15} className="text-blue-400" />
             <span className="font-semibold text-app text-sm">EDI 204 — Load Tender</span>
             <span className="text-xs font-mono text-gray-500">{tender.tenderId}</span>
+            {tender.orderId && (
+              <span className="text-xs font-mono text-gray-500">· {tender.orderId}</span>
+            )}
           </div>
-          <button onClick={onClose} className="text-muted-app hover:text-app transition cursor-pointer bg-transparent border-none text-lg leading-none">×</button>
+          <button type="button" onClick={onClose} className="text-muted-app hover:text-app transition cursor-pointer bg-transparent border-none text-lg leading-none">×</button>
         </div>
 
-        <div className="px-6 py-5 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+        <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+          <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="bg-input rounded-lg px-4 py-3">
-              <p className="text-[10px] text-gray-500 mb-1">FROM PARTNER</p>
-              <p className="text-sm font-semibold text-app">{tender.partner?.name}</p>
+              <p className="text-[10px] text-gray-500 mb-1">PARTNER</p>
+              <p className="font-semibold text-app">{tender.partner?.name}</p>
               <p className="text-xs text-gray-500 font-mono mt-0.5">{tender.ediRef}</p>
             </div>
             <div className="bg-input rounded-lg px-4 py-3">
               <p className="text-[10px] text-gray-500 mb-1">SHIPMENT</p>
-              <p className="text-sm font-semibold text-app">{tender.shipmentId}</p>
+              <p className="font-semibold text-app font-mono text-sm">{tender.shipmentId}</p>
               <p className="text-xs text-gray-500 mt-0.5">{tender.route}</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-input rounded-lg px-4 py-3 space-y-2">
-              <p className="text-[10px] text-gray-500">PICKUP DATE</p>
-              <p className="text-xs text-app">{fmt(tender.pickupDate)}</p>
-              <p className="text-[10px] text-gray-500 mt-1">DELIVERY DATE</p>
-              <p className="text-xs text-app">{fmt(tender.deliveryDate)}</p>
+          <Section title="Carrier identity">
+            <div className="grid grid-cols-3 gap-3">
+              <DetailField label="Carrier ID" value={tender.carrierId} />
+              <DetailField label="Carrier name" value={tender.carrierName} />
+              <DetailField label="SCAC code" value={tender.carrierScac} />
             </div>
-            <div className="bg-input rounded-lg px-4 py-3 space-y-2">
-              <p className="text-[10px] text-gray-500">WEIGHT</p>
-              <p className="text-xs text-app">{tender.weight || '—'}</p>
-              <p className="text-[10px] text-gray-500 mt-1">COMMODITY</p>
-              <p className="text-xs text-app">{tender.commodity || '—'}</p>
+          </Section>
+
+          <Section title="Schedule">
+            <div className="grid grid-cols-2 gap-3">
+              <DetailField label="Pickup date" value={fmt(tender.pickupDate)} />
+              <DetailField label="Est. delivery" value={fmt(tender.deliveryDate)} />
             </div>
-          </div>
+          </Section>
+
+          <Section title="Origin address (warehouse)" subtitle="From customer dispatch">
+            <div className="grid grid-cols-2 gap-3">
+              <DetailField label="Location name" value={o.locationName} />
+              <DetailField label="Region" value={o.region} />
+              <DetailField label="City / municipality" value={o.city} />
+              <DetailField label="ZIP code" value={o.zipCode} />
+              <DetailField label="Contact person" value={o.contactPerson} />
+              <DetailField label="Contact phone" value={o.contactPhone} />
+            </div>
+          </Section>
+
+          <Section title="Destination address" subtitle="From ASN / PO">
+            <div className="grid grid-cols-2 gap-3">
+              <DetailField label="Facility / consignee" value={d.facilityName} />
+              <DetailField label="Region" value={d.region} />
+              <DetailField label="City / municipality" value={d.city} />
+              <DetailField label="ZIP code" value={d.zipCode} />
+              <DetailField label="Contact person" value={d.contactPerson} />
+              <DetailField label="Contact phone" value={d.contactPhone} />
+            </div>
+            <DetailField label="Delivery instructions" value={d.deliveryInstructions} />
+          </Section>
+
+          {(tender.weight || tender.commodity) && (
+            <Section title="Load">
+              <div className="grid grid-cols-2 gap-3">
+                <DetailField label="Weight" value={tender.weight} />
+                <DetailField label="Commodity" value={tender.commodity} />
+              </div>
+            </Section>
+          )}
 
           <div className="bg-input rounded-lg px-4 py-3">
-            <p className="text-[10px] text-gray-500 mb-2">ASSIGN VEHICLE (990 Response)</p>
-            <VehicleDropdown value={vehicle} onChange={handleVehicleChange} vehicles={vehicles} loadWeight={tender.weight} />
+            <p className="text-[10px] text-gray-500 mb-2 uppercase tracking-wide">Assign vehicle (990 response)</p>
+            <VehicleDropdown value={vehicle} onChange={setVehicle} vehicles={vehicles} loadWeight={tender.weight} />
             {vehicle && capacityCheck?.ok && (
               <p className="text-[10px] text-green-400 mt-2 flex items-center gap-1">
-                <CheckCircle2 size={10} /> Vehicle assigned — ready to send 990 Accepted
+                <CheckCircle2 size={10} /> Ready to send 990 Accepted
               </p>
             )}
             {vehicle && capacityCheck && !capacityCheck.ok && (
@@ -143,10 +211,11 @@ function TenderDetail({ tender, vehicles, onClose, onRespond }) {
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-app">
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-app shrink-0">
           {tender.status === 'Pending' ? (
             <>
               <button
+                type="button"
                 disabled={loading}
                 onClick={() => handleRespond('Rejected')}
                 className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition cursor-pointer font-medium disabled:opacity-50"
@@ -154,6 +223,7 @@ function TenderDetail({ tender, vehicles, onClose, onRespond }) {
                 <XCircle size={12} /> Send 990 — Rejected
               </button>
               <button
+                type="button"
                 disabled={!canAccept || loading}
                 onClick={() => handleRespond('Accepted')}
                 className={`flex items-center gap-1.5 text-xs px-4 py-2 rounded-lg font-medium transition cursor-pointer border-none
@@ -220,7 +290,6 @@ function LoadTenders() {
 
   return (
     <div className="space-y-4">
-      {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: 'Pending 204s', value: pending,  icon: Clock,        color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20' },
@@ -237,10 +306,9 @@ function LoadTenders() {
         ))}
       </div>
 
-      {/* Table */}
       <div className="bg-card rounded-xl border border-app overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-app">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Inbox size={14} className="text-gray-400" />
             <span className="font-semibold text-sm text-app">Incoming Load Tenders (EDI 204)</span>
             {pending > 0 && (
@@ -251,60 +319,60 @@ function LoadTenders() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[1100px]">
             <thead>
               <tr className="text-gray-500 text-xs border-b border-app">
-                <th className="text-left px-5 py-2.5 font-medium">Tender ID</th>
-                <th className="text-left px-5 py-2.5 font-medium">Partner</th>
-                <th className="text-left px-5 py-2.5 font-medium">Shipment</th>
-                <th className="text-left px-5 py-2.5 font-medium">Route</th>
-                <th className="text-left px-5 py-2.5 font-medium">Pickup</th>
-                <th className="text-left px-5 py-2.5 font-medium">Delivery</th>
-                <th className="text-left px-5 py-2.5 font-medium">Weight</th>
-                <th className="text-left px-5 py-2.5 font-medium">Vehicle</th>
-                <th className="text-left px-5 py-2.5 font-medium">990 Status</th>
-                <th className="text-left px-5 py-2.5 font-medium">Received</th>
-                <th className="text-right px-5 py-2.5 font-medium">Action</th>
+                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Tender ID</th>
+                <th className="text-left px-4 py-2.5 font-medium">Partner</th>
+                <th className="text-left px-4 py-2.5 font-medium">Order</th>
+                <th className="text-left px-4 py-2.5 font-medium">Carrier</th>
+                <th className="text-left px-4 py-2.5 font-medium">SCAC</th>
+                <th className="text-left px-4 py-2.5 font-medium">Pickup</th>
+                <th className="text-left px-4 py-2.5 font-medium">Est. delivery</th>
+                <th className="text-left px-4 py-2.5 font-medium">Origin</th>
+                <th className="text-left px-4 py-2.5 font-medium">Destination</th>
+                <th className="text-left px-4 py-2.5 font-medium">990</th>
+                <th className="text-left px-4 py-2.5 font-medium">Received</th>
+                <th className="text-right px-4 py-2.5 font-medium">Action</th>
               </tr>
             </thead>
             <tbody>
               {tenders.length === 0 && (
-                <tr><td colSpan={11} className="text-center py-10 text-gray-600 text-sm">No load tenders yet.</td></tr>
+                <tr><td colSpan={12} className="text-center py-10 text-gray-600 text-sm">No load tenders yet.</td></tr>
               )}
-              {tenders.map(t => {
-                const v = t.assignedVehicle;
-                return (
-                  <tr key={t._id} className="border-b border-subtle hover:bg-hover transition">
-                    <td className="px-5 py-3 font-mono text-xs text-gray-400">{t.tenderId}</td>
-                    <td className="px-5 py-3 text-xs text-app font-medium">{t.partner?.name}</td>
-                    <td className="px-5 py-3 font-mono text-xs text-gray-400">{t.shipmentId}</td>
-                    <td className="px-5 py-3 text-xs text-gray-300">{t.route}</td>
-                    <td className="px-5 py-3 text-xs text-gray-400">{fmt(t.pickupDate)}</td>
-                    <td className="px-5 py-3 text-xs text-gray-400">{fmt(t.deliveryDate)}</td>
-                    <td className="px-5 py-3 text-xs text-gray-400">{t.weight || '—'}</td>
-                    <td className="px-5 py-3">
-                      {v ? (
-                        <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${VEHICLE_TYPE_STYLE[v.type]}`}>
-                          {v.type} · {v.plate}
-                        </span>
-                      ) : <span className="text-xs text-gray-600">—</span>}
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className={`text-xs px-2 py-1 rounded-full ${STATUS_STYLE[t.status]}`}>{t.status}</span>
-                    </td>
-                    <td className="px-5 py-3 text-xs text-gray-500">{fmtTime(t.createdAt)}</td>
-                    <td className="px-5 py-3 text-right">
-                      <button
-                        onClick={() => setSelected(t)}
-                        className={`text-xs px-3 py-1.5 rounded-lg font-medium transition cursor-pointer border-none
-                          ${t.status === 'Pending' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-input hover:bg-white/10 text-gray-400 border border-app'}`}
-                      >
-                        {t.status === 'Pending' ? 'Respond' : 'View'}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+              {tenders.map(t => (
+                <tr key={t._id} className="border-b border-subtle hover:bg-hover transition">
+                  <td className="px-4 py-3 font-mono text-xs text-gray-400 whitespace-nowrap">{t.tenderId}</td>
+                  <td className="px-4 py-3 text-xs text-app font-medium whitespace-nowrap">{t.partner?.name}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-500">{dash(t.orderId)}</td>
+                  <td className="px-4 py-3 text-xs text-gray-300 max-w-[120px] truncate" title={t.carrierName || t.carrierId}>
+                    {dash(t.carrierName || t.carrierId)}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-500 font-mono">{dash(t.carrierScac)}</td>
+                  <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{fmt(t.pickupDate)}</td>
+                  <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{fmt(t.deliveryDate)}</td>
+                  <td className="px-4 py-3 text-xs text-gray-400 max-w-[140px] truncate" title={originSummary(t.originAddress)}>
+                    {originSummary(t.originAddress)}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-400 max-w-[140px] truncate" title={destSummary(t.destinationAddress)}>
+                    {destSummary(t.destinationAddress)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${STATUS_STYLE[t.status]}`}>{t.status}</span>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{fmtTime(t.createdAt)}</td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() => setSelected(t)}
+                      className={`text-xs px-3 py-1.5 rounded-lg font-medium transition cursor-pointer border-none whitespace-nowrap
+                        ${t.status === 'Pending' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-input hover:bg-white/10 text-gray-400 border border-app'}`}
+                    >
+                      {t.status === 'Pending' ? 'Respond' : 'View'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

@@ -9,4 +9,11 @@ function getPickupAndDeliveryDates() {
   return { pickupDate, deliveryDate };
 }
 
-module.exports = { getPickupAndDeliveryDates };
+/** Parse YYYY-MM-DD or ISO date from customer JSON */
+function parseDateInput(value) {
+  if (value == null || value === '') return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+module.exports = { getPickupAndDeliveryDates, parseDateInput };

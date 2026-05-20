@@ -1,15 +1,40 @@
 const mongoose = require('mongoose');
 
+const originAddressSchema = new mongoose.Schema({
+  locationName:   { type: String, default: '' },
+  region:         { type: String, default: '' },
+  city:           { type: String, default: '' },
+  zipCode:        { type: String, default: '' },
+  contactPerson:  { type: String, default: '' },
+  contactPhone:   { type: String, default: '' },
+}, { _id: false });
+
+const destinationAddressSchema = new mongoose.Schema({
+  facilityName:          { type: String, default: '' },
+  region:                { type: String, default: '' },
+  city:                  { type: String, default: '' },
+  zipCode:               { type: String, default: '' },
+  contactPerson:         { type: String, default: '' },
+  contactPhone:          { type: String, default: '' },
+  deliveryInstructions:  { type: String, default: '' },
+}, { _id: false });
+
 const loadTenderSchema = new mongoose.Schema({
   tenderId:        { type: String, required: true, unique: true },
   ediRef:          { type: String },
   partner:         { type: mongoose.Schema.Types.ObjectId, ref: 'Partner', required: true },
+  orderId:         { type: String },
   shipmentId:      { type: String, required: true },
   route:           { type: String, required: true },
+  carrierId:       { type: String, default: '' },
+  carrierName:     { type: String, default: '' },
+  carrierScac:     { type: String, default: '' },
   pickupDate:      { type: Date, default: null },
   deliveryDate:    { type: Date, default: null },
-  weight:          { type: String },
-  commodity:       { type: String },
+  originAddress:   { type: originAddressSchema, default: () => ({}) },
+  destinationAddress: { type: destinationAddressSchema, default: () => ({}) },
+  weight:          { type: String, default: '' },
+  commodity:       { type: String, default: '' },
   status:          { type: String, enum: ['Pending', 'Accepted', 'Rejected'], default: 'Pending' },
   assignedVehicle: { type: mongoose.Schema.Types.ObjectId, ref: 'Vehicle', default: null },
   rawEdi:          { type: String },

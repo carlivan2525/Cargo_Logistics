@@ -5,9 +5,9 @@ const Transmission = require('../models/Transmission');
 const Shipment = require('../models/Shipment');
 const Vehicle = require('../models/Vehicle');
 const auth = require('../middleware/auth');
-const { getPickupAndDeliveryDates } = require('../utils/dates');
+const { getPickupAndDeliveryDates, parseDateInput } = require('../utils/dates');
 const { canVehicleCarryLoad } = require('../utils/capacity');
-const { normalize204Input } = require('../utils/edi204Parser');
+const { normalizeCustomer204 } = require('../utils/normalize204');
 const { nextSequentialId } = require('../utils/ids');
 const router = express.Router();
 
@@ -32,11 +32,22 @@ router.post('/', auth, (req, res, next) => {
     const tenderId = await nextSequentialId(LoadTender, 'tenderId', 'TND');
     const trxId = await nextSequentialId(Transmission, 'transmissionId', 'TRX');
 
-    const input = normalize204Input(req.body);
-    const { route, weight, commodity, isaId, shipmentId: bodyShipmentId, rawEdi, isaSegment } = input;
+    const input = normalizeCustomer204(req.body);
+    const {
+      route, weight, commodity, isaId, orderId,
+      shipmentId: bodyShipmentId, rawEdi, isaSegment,
+      pickupDate: rawPickup, deliveryDate: rawDelivery,
+      carrierId, carrierName, carrierScac,
+      originAddress, destinationAddress,
+    } = input;
 
     if (!isaId) return res.status(400).json({ message: 'isaId is required (e.g. SURPLUS) or send valid X12 in rawEdi' });
-    if (!route) return res.status(400).json({ message: 'route is required' });
+    if (!route) return res.status(400).json({ message: 'route is required (or send origin/destination city)' });
+
+    const pickupDate = parseDateInput(rawPickup);
+    const deliveryDate = parseDateInput(rawDelivery);
+    if (!pickupDate) return res.status(400).json({ message: 'pickupDate is required (customer schedule)' });
+    if (!deliveryDate) return res.status(400).json({ message: 'deliveryDate or estimatedDeliveryDate is required' });
 
     const partner = await Partner.findOne({ isaId: isaId.toUpperCase() });
     if (!partner) {
@@ -47,12 +58,18 @@ router.post('/', auth, (req, res, next) => {
       tenderId,
       ediRef: trxId,
       partner: partner._id,
+      orderId: orderId || undefined,
       shipmentId: bodyShipmentId || `SHP-${Date.now()}`,
       route,
+      carrierId,
+      carrierName,
+      carrierScac,
+      pickupDate,
+      deliveryDate,
+      originAddress,
+      destinationAddress,
       weight: weight || '',
       commodity: commodity || '',
-      pickupDate: null,
-      deliveryDate: null,
       status: 'Pending',
       rawEdi: rawEdi || null,
     });
@@ -95,18 +112,23 @@ router.post('/:id/respond', auth, async (req, res) => {
         return res.status(400).json({ message: capacityCheck.message });
       }
 
-      const { pickupDate, deliveryDate } = getPickupAndDeliveryDates();
-      tender.pickupDate = pickupDate;
-      tender.deliveryDate = deliveryDate;
+      if (!tender.pickupDate || !tender.deliveryDate) {
+        const fallback = getPickupAndDeliveryDates();
+        if (!tender.pickupDate) tender.pickupDate = fallback.pickupDate;
+        if (!tender.deliveryDate) tender.deliveryDate = fallback.deliveryDate;
+      }
       tender.status = status;
       tender.assignedVehicle = vehicleId;
 
-      const routeParts = tender.route.split(/\s*[-→]\s*/);
+      const o = tender.originAddress || {};
+      const d = tender.destinationAddress || {};
+      const originLabel = o.locationName || o.city || tender.route.split(/\s*[-→]\s*/)[0]?.trim();
+      const destLabel = d.facilityName || d.city || tender.route.split(/\s*[-→]\s*/)[1]?.trim();
       await new Shipment({
         shipmentId:  tender.shipmentId,
         route:       tender.route,
-        origin:      routeParts[0]?.trim(),
-        destination: routeParts[1]?.trim(),
+        origin:      originLabel,
+        destination: destLabel,
         partner:     tender.partner,
         vehicle:     vehicleId,
         tender:      tender._id,
@@ -114,8 +136,6 @@ router.post('/:id/respond', auth, async (req, res) => {
       }).save();
     } else if (status === 'Rejected') {
       tender.status = status;
-      tender.pickupDate = null;
-      tender.deliveryDate = null;
     } else {
       return res.status(400).json({ message: 'Invalid status' });
     }
