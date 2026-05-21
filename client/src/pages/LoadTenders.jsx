@@ -356,9 +356,6 @@ function LoadTenders() {
               <tr className="text-gray-500 text-xs border-b border-app">
                 <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Tender ID</th>
                 <th className="text-left px-4 py-2.5 font-medium">Partner</th>
-                <th className="text-left px-4 py-2.5 font-medium">Order</th>
-                <th className="text-left px-4 py-2.5 font-medium">Carrier</th>
-                <th className="text-left px-4 py-2.5 font-medium">SCAC</th>
                 <th className="text-left px-4 py-2.5 font-medium">Pickup</th>
                 <th className="text-left px-4 py-2.5 font-medium">Est. delivery</th>
                 <th className="text-left px-4 py-2.5 font-medium">Route</th>
@@ -369,17 +366,12 @@ function LoadTenders() {
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={11} className="text-center py-10 text-gray-600 text-sm">No load tenders found.</td></tr>
+                <tr><td colSpan={8} className="text-center py-10 text-gray-600 text-sm">No load tenders found.</td></tr>
               )}
               {filtered.map(t => (
                 <tr key={t._id} className="border-b border-subtle hover:bg-hover transition">
                   <td className="px-4 py-3 font-mono text-xs text-gray-400 whitespace-nowrap">{t.tenderId}</td>
                   <td className="px-4 py-3 text-xs text-app font-medium whitespace-nowrap">{t.partner?.name}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-500">{dash(t.orderId)}</td>
-                  <td className="px-4 py-3 text-xs text-gray-300 max-w-[120px] truncate" title={t.carrierName || t.carrierId}>
-                    {dash(t.carrierName || t.carrierId)}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-500 font-mono">{dash(t.carrierScac)}</td>
                   <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{fmt(t.pickupDate)}</td>
                   <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{fmt(t.deliveryDate)}</td>
                   <td className="px-4 py-3 text-xs text-gray-300 whitespace-nowrap">{t.route}</td>
