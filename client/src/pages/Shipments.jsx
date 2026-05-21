@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Truck, CheckCircle2, Clock, Package, ChevronDown, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '../api';
 import { useToast } from '../components/Toast';
+import { usePolling } from '../hooks/usePolling';
 
 const STATUS_OPTIONS = ['Pending', 'Pickup', 'In Transit', 'Delivered', 'Exception'];
 
@@ -196,6 +197,7 @@ function ShipmentsTable() {
   };
 
   useEffect(() => { load(); }, []);
+  usePolling(load);
 
   const requestStatusChange = (id, newStatus) => {
     const current = shipments.find(s => s._id === id);

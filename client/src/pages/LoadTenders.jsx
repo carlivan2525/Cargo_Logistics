@@ -3,6 +3,7 @@ import { Inbox, Truck, CheckCircle2, XCircle, Clock, ChevronDown, ChevronLeft, C
 import { api } from '../api';
 import { canVehicleCarryLoad } from '../utils/capacity';
 import { useToast } from '../components/Toast';
+import { usePolling } from '../hooks/usePolling';
 
 const VEHICLE_TYPE_STYLE = {
   'L300':     'bg-blue-500/20 text-blue-400',
@@ -286,6 +287,7 @@ function LoadTenders() {
   };
 
   useEffect(() => { load(); }, []);
+  usePolling(load);
 
   const handleRespond = async (id, status, vehicleId) => {
     try {

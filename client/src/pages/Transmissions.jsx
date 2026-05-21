@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowUpDown, Send, Search, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '../api';
+import { usePolling } from '../hooks/usePolling';
 
 const STATUS_STYLE = {
   'Sent':     'bg-green-500/20 text-green-400',
@@ -35,6 +36,7 @@ function Transmissions() {
   };
 
   useEffect(() => { load(1); }, []);
+  usePolling(() => load(page));
 
   const filtered = data.filter(t => {
     const matchSearch =

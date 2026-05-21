@@ -15,6 +15,7 @@ import About from './About';
 import Settings from './Settings';
 import LoadTenders from './LoadTenders';
 import { api } from '../api';
+import { usePolling } from '../hooks/usePolling';
 
 const navSections = [
   {
@@ -80,7 +81,7 @@ function Dashboard({ user, onLogout }) {
   const [recentShipments, setRecentShipments] = useState([]);
   const [recentEdi, setRecentEdi]             = useState([]);
 
-  useEffect(() => {
+  const fetchDashboard = () => {
     const token = localStorage.getItem('token');
     if (!token) return;
     Promise.all([
@@ -90,25 +91,23 @@ function Dashboard({ user, onLogout }) {
       api.get('/transmissions'),
     ]).then(([tenders, shipments, invoices, txRes]) => {
       const transmissions = txRes.data ?? txRes;
-      // Sidebar badges
       setCounts({
         tenders:   tenders.filter(t => t.status === 'Pending').length,
         shipments: shipments.filter(s => s.status === 'In Transit').length,
         invoices:  invoices.filter(i => i.status === 'Overdue').length,
       });
-      // Stat cards
       setStats({
         activeShipments: shipments.filter(s => ['Pickup','In Transit'].includes(s.status)).length,
         tenders204:      tenders.length,
         sent214:         transmissions.filter(t => t.ediCode === '214').length,
         exceptions:      shipments.filter(s => s.status === 'Exception').length,
       });
-      // Recent shipments (latest 5)
       setRecentShipments(shipments.slice(0, 5));
-      // Recent EDI transmissions (latest 5)
       setRecentEdi(transmissions.slice(0, 5));
     }).catch(() => {});
-  }, [activeNav]);
+  };
+
+  usePolling(fetchDashboard);
 
   const STATUS_COLOR = {
     'Pending':    'bg-gray-500/20 text-gray-400',

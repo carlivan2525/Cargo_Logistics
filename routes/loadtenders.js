@@ -22,7 +22,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Plain-text X12 body → { rawEdi } (JSON clients unchanged)
-router.post('/', auth, (req, res, next) => {
+router.post('/', (req, res, next) => {
   if (typeof req.body === 'string' && req.body.includes('ISA*')) {
     req.body = { rawEdi: req.body };
   }
@@ -202,6 +202,7 @@ router.post('/:id/respond', auth, async (req, res) => {
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify({
               orderId:         tender.orderId || '',
+              shipmentId:      tender.shipmentId || '',
               status:          'ACCEPTED',
               assignedVehicle: vehicle?.plate || vehicle?.name || '',
             }),
