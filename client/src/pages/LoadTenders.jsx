@@ -306,7 +306,7 @@ function LoadTenders() {
   const fleetCount = vehicles.length;
 
   const fmt = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
-  const fmtTime = (d) => d ? new Date(d).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }) : '—';
+  const fmtTime = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date(d).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }) : '—';
 
   if (loading) return <div className="text-gray-500 text-sm py-10 text-center">Loading...</div>;
   if (error)   return <div className="text-red-400 text-sm py-10 text-center">{error}</div>;
