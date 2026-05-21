@@ -16,6 +16,7 @@ import Settings from './Settings';
 import LoadTenders from './LoadTenders';
 import { api } from '../api';
 import { usePolling } from '../hooks/usePolling';
+import ShipmentsChart from '../components/ShipmentsChart';
 
 const navSections = [
   {
@@ -80,6 +81,7 @@ function Dashboard({ user, onLogout }) {
   const [stats, setStats]         = useState({ activeShipments: 0, tenders204: 0, sent214: 0, exceptions: 0 });
   const [recentShipments, setRecentShipments] = useState([]);
   const [recentEdi, setRecentEdi]             = useState([]);
+  const [allShipments, setAllShipments]       = useState([]);
 
   const fetchDashboard = () => {
     const token = localStorage.getItem('token');
@@ -103,6 +105,7 @@ function Dashboard({ user, onLogout }) {
         exceptions:      shipments.filter(s => s.status === 'Exception').length,
       });
       setRecentShipments(shipments.slice(0, 5));
+      setAllShipments(shipments);
       setRecentEdi(transmissions.slice(0, 5));
     }).catch(() => {});
   };
@@ -290,6 +293,10 @@ function Dashboard({ user, onLogout }) {
             </div>
 
           </div>
+
+          {/* Shipments Over Time */}
+          <ShipmentsChart shipments={allShipments} />
+
           </>)}
         </main>
       </div>
