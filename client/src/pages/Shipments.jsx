@@ -252,6 +252,7 @@ function ShipmentsTable() {
           <thead className="sticky top-0 bg-card z-10">
             <tr className="text-gray-500 text-xs border-b border-app">
               <th className="text-left px-5 py-2.5 font-medium">Shipment ID</th>
+              <th className="text-left px-5 py-2.5 font-medium">Date</th>
               <th className="text-left px-5 py-2.5 font-medium">Route</th>
               <th className="text-left px-5 py-2.5 font-medium">Current Milestone</th>
               <th className="text-left px-5 py-2.5 font-medium">Status</th>
@@ -261,11 +262,14 @@ function ShipmentsTable() {
           </thead>
           <tbody>
             {shipments.length === 0 && (
-              <tr><td colSpan={6} className="text-center py-10 text-gray-600 text-sm">No shipments yet. Accept a load tender first.</td></tr>
+              <tr><td colSpan={7} className="text-center py-10 text-gray-600 text-sm">No shipments yet. Accept a load tender first.</td></tr>
             )}
             {shipments.map(s => (
               <tr key={s._id} className="border-b border-subtle hover:bg-hover transition">
                 <td className="px-5 py-3.5 font-mono text-xs text-gray-400">{s.shipmentId}</td>
+                <td className="px-5 py-3.5 text-xs text-gray-500">
+                  {s.createdAt ? new Date(s.createdAt).toLocaleDateString('en-PH', { month: '2-digit', day: '2-digit', year: 'numeric' }) : '—'}
+                </td>
                 <td className="px-5 py-3.5">
                   <p className="text-xs font-medium text-app">{s.route}</p>
                   <p className="text-xs text-gray-500">{s.partner?.name}</p>

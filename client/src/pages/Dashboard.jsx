@@ -282,7 +282,8 @@ function Dashboard({ user, onLogout }) {
                       <p className="text-xs text-gray-500 mt-0.5">{e.partner?.name}</p>
                     </div>
                     <span className="text-xs text-gray-500 flex-shrink-0">
-                      {new Date(e.createdAt).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(e.createdAt).toLocaleDateString('en-PH', { month: '2-digit', day: '2-digit', year: 'numeric' }) + ' ' +
+                       new Date(e.createdAt).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </li>
                 ))}

@@ -46,7 +46,12 @@ function Transmissions() {
     return matchSearch && matchDir && matchStatus;
   });
 
-  const fmtTime = d => d ? new Date(d).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }) : '—';
+  const fmtDateTime = d => {
+    if (!d) return '—';
+    const dt = new Date(d);
+    return dt.toLocaleDateString('en-PH', { month: '2-digit', day: '2-digit', year: 'numeric' }) + ' ' +
+           dt.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
+  };
 
   return (
     <div className="space-y-4">
@@ -106,7 +111,7 @@ function Transmissions() {
                 <th className="text-left px-5 py-2.5 font-medium">Direction</th>
                 <th className="text-left px-5 py-2.5 font-medium">Partner</th>
                 <th className="text-left px-5 py-2.5 font-medium">Shipment</th>
-                <th className="text-left px-5 py-2.5 font-medium">Time</th>
+                <th className="text-left px-5 py-2.5 font-medium">Date & Time</th>
                 <th className="text-left px-5 py-2.5 font-medium">Status</th>
               </tr>
             </thead>
@@ -130,7 +135,7 @@ function Transmissions() {
                   </td>
                   <td className="px-5 py-3 text-xs text-app">{t.partner?.name}</td>
                   <td className="px-5 py-3 text-xs text-gray-400 font-mono">{t.shipment?.shipmentId ?? '—'}</td>
-                  <td className="px-5 py-3 text-xs text-gray-500">{fmtTime(t.createdAt)}</td>
+                  <td className="px-5 py-3 text-xs text-gray-500">{fmtDateTime(t.createdAt)}</td>
                   <td className="px-5 py-3">
                     <span className={`text-xs px-2 py-1 rounded-full ${STATUS_STYLE[t.status]}`}>{t.status}</span>
                   </td>
