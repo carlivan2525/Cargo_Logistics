@@ -267,6 +267,7 @@ function LoadTenders() {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
+  const [filterStatus, setFilterStatus] = useState('All');
   const { show: showToast, node: toastNode } = useToast();
 
   const load = async () => {
@@ -305,6 +306,8 @@ function LoadTenders() {
   const rejected = tenders.filter(t => t.status === 'Rejected').length;
   const fleetCount = vehicles.length;
 
+  const filtered = filterStatus === 'All' ? tenders : tenders.filter(t => t.status === filterStatus);
+
   const fmt = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
   const fmtTime = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date(d).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }) : '—';
 
@@ -322,6 +325,26 @@ function LoadTenders() {
               <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">{pending} awaiting response</span>
             )}
             <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">{fleetCount} trucks in fleet</span>
+          </div>
+          <div className="flex items-center gap-1">
+            {[
+              { label: 'All',      count: tenders.length },
+              { label: 'Pending',  count: pending },
+              { label: 'Accepted', count: accepted },
+              { label: 'Rejected', count: rejected },
+            ].map(({ label, count }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => setFilterStatus(label)}
+                className={`text-xs px-3 py-1.5 rounded-lg font-medium transition cursor-pointer border
+                  ${filterStatus === label
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-input text-gray-400 border-app hover:text-app hover:bg-hover'}`}
+              >
+                {label} <span className="opacity-70">({count})</span>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -343,10 +366,10 @@ function LoadTenders() {
               </tr>
             </thead>
             <tbody>
-              {tenders.length === 0 && (
-                <tr><td colSpan={11} className="text-center py-10 text-gray-600 text-sm">No load tenders yet.</td></tr>
+              {filtered.length === 0 && (
+                <tr><td colSpan={11} className="text-center py-10 text-gray-600 text-sm">No load tenders found.</td></tr>
               )}
-              {tenders.map(t => (
+              {filtered.map(t => (
                 <tr key={t._id} className="border-b border-subtle hover:bg-hover transition">
                   <td className="px-4 py-3 font-mono text-xs text-gray-400 whitespace-nowrap">{t.tenderId}</td>
                   <td className="px-4 py-3 text-xs text-app font-medium whitespace-nowrap">{t.partner?.name}</td>
