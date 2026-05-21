@@ -85,22 +85,40 @@ router.put('/:id/status', auth, async (req, res) => {
       }
 
       // POST 214 to partner's system
-      try {
-        const payload214 = {
-          shipmentId:  shipment.shipmentId,
-          status:      STATUS_MAP[status] || status.toUpperCase().replace(/ /g, '_'),
-          location,
-          description: DESCRIPTION_MAP[status] || '',
-        };
-        console.log('214 POST payload:', payload214);
-        const r214 = await fetch('https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-214', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify(payload214),
-        });
-        console.log('214 POST response:', r214.status);
-      } catch (err214) {
-        console.error('214 POST to partner failed:', err214.message);
+      const Partner = require('../models/Partner');
+      const partner = await Partner.findById(shipment.partner);
+      const partnerName = partner?.name?.toLowerCase().trim();
+
+      const payload214 = {
+        shipmentId:  shipment.shipmentId,
+        status:      STATUS_MAP[status] || status.toUpperCase().replace(/ /g, '_'),
+        location,
+        description: DESCRIPTION_MAP[status] || '',
+      };
+
+      const WEBHOOK_214 = {
+        'surplus': [
+          'https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-214',
+          'https://landlady-snap-booting.ngrok-free.dev/api/edi/vendor/receive-214',
+        ],
+        'hiraya': [
+          'https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/214',
+        ],
+      };
+
+      const webhookUrls = WEBHOOK_214[partnerName] || [];
+      for (const webhookUrl of webhookUrls) {
+        try {
+          console.log(`214 POST to ${webhookUrl}:`, payload214);
+          const r214 = await fetch(webhookUrl, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(payload214),
+          });
+          console.log(`214 POST response from ${webhookUrl}: ${r214.status}`);
+        } catch (err214) {
+          console.error(`214 POST to ${webhookUrl} failed:`, err214.message);
+        }
       }
     }
 

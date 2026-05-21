@@ -24,7 +24,7 @@ function App() {
     <Routes>
       <Route path="/login" element={<Login onLogin={handleLogin} />} />
       <Route
-        path="/dashboard"
+        path="/dashboard/*"
         element={user ? <Dashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />}
       />
       <Route path="*" element={<Navigate to="/login" replace />} />

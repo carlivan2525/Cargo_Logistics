@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Truck, CheckCircle2, Clock, Package, ChevronDown, AlertCircle } from 'lucide-react';
+import { Truck, CheckCircle2, Clock, Package, ChevronDown, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '../api';
 import { useToast } from '../components/Toast';
 
@@ -236,8 +236,8 @@ function ShipmentsTable() {
       onCancel={() => !saving && setPending(null)}
     />
     {toastNode}
-    <div className="bg-card rounded-xl border border-app overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-app">
+    <div className="bg-card rounded-xl border border-app flex flex-col" style={{ maxHeight: '70vh' }}>
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-app shrink-0">
         <div className="flex items-center gap-2">
           <Package size={14} className="text-gray-400" />
           <span className="font-semibold text-sm text-app">Shipments</span>
@@ -247,9 +247,9 @@ function ShipmentsTable() {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-auto flex-1">
         <table className="w-full text-sm">
-          <thead>
+          <thead className="sticky top-0 bg-card z-10">
             <tr className="text-gray-500 text-xs border-b border-app">
               <th className="text-left px-5 py-2.5 font-medium">Shipment ID</th>
               <th className="text-left px-5 py-2.5 font-medium">Route</th>

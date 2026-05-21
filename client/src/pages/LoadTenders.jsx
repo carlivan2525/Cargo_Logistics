@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Inbox, Truck, CheckCircle2, XCircle, Clock, ChevronDown } from 'lucide-react';
+import { Inbox, Truck, CheckCircle2, XCircle, Clock, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '../api';
 import { canVehicleCarryLoad } from '../utils/capacity';
 import { useToast } from '../components/Toast';
@@ -312,25 +312,9 @@ function LoadTenders() {
   if (error)   return <div className="text-red-400 text-sm py-10 text-center">{error}</div>;
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: 'Pending 204s', value: pending,  icon: Clock,        color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20' },
-          { label: 'Accepted',     value: accepted, icon: CheckCircle2, color: 'text-green-400',  bg: 'bg-green-500/10 border-green-500/20' },
-          { label: 'Rejected',     value: rejected, icon: XCircle,      color: 'text-red-400',    bg: 'bg-red-500/10 border-red-500/20' },
-        ].map(({ label, value, icon: Icon, color, bg }) => (
-          <div key={label} className={`rounded-xl p-4 border ${bg} flex items-center gap-3`}>
-            <Icon size={18} className={color} />
-            <div>
-              <p className="text-2xl font-bold text-app">{value}</p>
-              <p className="text-xs text-gray-400">{label}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="bg-card rounded-xl border border-app overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-app">
+    <>
+      <div className="bg-card rounded-xl border border-app flex flex-col h-full">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-app shrink-0">
           <div className="flex items-center gap-2 flex-wrap">
             <Inbox size={14} className="text-gray-400" />
             <span className="font-semibold text-sm text-app">Incoming Load Tenders (EDI 204)</span>
@@ -341,9 +325,9 @@ function LoadTenders() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-auto flex-1">
           <table className="w-full text-sm min-w-[1100px]">
-            <thead>
+            <thead className="sticky top-0 bg-card z-10">
               <tr className="text-gray-500 text-xs border-b border-app">
                 <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Tender ID</th>
                 <th className="text-left px-4 py-2.5 font-medium">Partner</th>
@@ -404,7 +388,7 @@ function LoadTenders() {
         />
       )}
       {toastNode}
-    </div>
+    </>
   );
 }
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Truck, FileText, Inbox,
   ArrowUpDown, Globe, Settings as SettingsIcon,
@@ -48,9 +49,32 @@ const statCards = [
   { icon: AlertTriangle, label: 'Exceptions',        key: 'exceptions',      subColor: 'text-red-400', valueColor: 'text-red-400' },
 ];
 
+// map between URL slug and nav label
+const SLUG_TO_LABEL = {
+  '':               'Dashboard',
+  'load-tenders':   'Load Tenders',
+  'shipments':      'Shipments',
+  'invoices':       'Invoices',
+  'transmissions':  'Transmissions',
+  'partners':       'Partners',
+  'settings':       'Settings',
+  'about':          'About',
+};
+const LABEL_TO_SLUG = Object.fromEntries(Object.entries(SLUG_TO_LABEL).map(([k,v]) => [v, k]));
+
 function Dashboard({ user, onLogout }) {
   const { setTheme, isDark } = useTheme();
-  const [activeNav, setActiveNav] = useState('Dashboard');
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // derive active nav from URL
+  const slug = location.pathname.replace(/^\/dashboard\/?/, '');
+  const activeNav = SLUG_TO_LABEL[slug] ?? 'Dashboard';
+
+  const setActiveNav = (label) => {
+    const s = LABEL_TO_SLUG[label] ?? '';
+    navigate(s ? `/dashboard/${s}` : '/dashboard');
+  };
   const [counts, setCounts]       = useState({ tenders: 0, shipments: 0, invoices: 0 });
   const [stats, setStats]         = useState({ activeShipments: 0, tenders204: 0, sent214: 0, exceptions: 0 });
   const [recentShipments, setRecentShipments] = useState([]);
@@ -162,7 +186,7 @@ function Dashboard({ user, onLogout }) {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-6 space-y-5">
+        <main className={`flex-1 overflow-hidden ${activeNav === 'Load Tenders' ? 'flex flex-col p-6' : 'overflow-y-auto p-6 space-y-5'}`}>
           {activeNav === 'Load Tenders'  && <LoadTenders />}
           {activeNav === 'Shipments'     && <ShipmentsTable />}
           {activeNav === 'Invoices'      && <Invoices />}

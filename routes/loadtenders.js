@@ -178,17 +178,35 @@ router.post('/:id/respond', auth, async (req, res) => {
 
     // POST 990 acknowledgement to partner's system
     if (status === 'Accepted') {
-      try {
-        await fetch('https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-990', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({
-            shipmentId: tender.shipmentId,
-            status:     'ACCEPTED',
-          }),
-        });
-      } catch (webhookErr) {
-        console.error('990 POST to partner failed:', webhookErr.message);
+      const partner = await require('../models/Partner').findById(tender.partner);
+      const partnerName = partner?.name?.toLowerCase();
+
+      if (partnerName === 'surplus') {
+        try {
+          await fetch('https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-990', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({
+              shipmentId: tender.shipmentId,
+              status:     'ACCEPTED',
+            }),
+          });
+        } catch (e) { console.error('990 Surplus failed:', e.message); }
+      }
+
+      if (partnerName === 'hiraya') {
+        try {
+          const vehicle = await require('../models/Vehicle').findById(vehicleId);
+          await fetch('https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/cargo/webhook', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({
+              orderId:         tender.orderId || '',
+              status:          'ACCEPTED',
+              assignedVehicle: vehicle?.plate || vehicle?.name || '',
+            }),
+          });
+        } catch (e) { console.error('990 Hiraya failed:', e.message); }
       }
     }
 
