@@ -27,7 +27,7 @@ const DESCRIPTION_MAP = {
 // Webhook endpoints per partner for invoice notification
 const INVOICE_WEBHOOKS = {
   'surplus': 'https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-invoice',
-  'hiraya':  'https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/invoice',
+  'hiraya':  'https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/receive/freight-invoice',
 };
 
 // GET all
@@ -183,10 +183,10 @@ router.put('/:id/status', auth, async (req, res) => {
               method:  'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                shipmentId:    shipment.shipmentId,
-                invoiceNumber: invoiceId,
-                status:        'Pending',
-                totalAmount:   amount,
+                shipmentId: shipment.shipmentId,
+                invoiceId:  invoiceId,
+                status:     'Pending',
+                totalAmount: amount,
               }),
             });
             console.log(`Invoice posted to ${partnerName}: ${invoiceId}`);

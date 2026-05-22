@@ -183,7 +183,13 @@ router.post('/:id/send210', auth, async (req, res) => {
     // POST 210 to partner's API with pdfUrl
     try {
       const partner = await Partner.findById(invoice.partner._id);
-      const endpoint = partner?.apiEndpoint;
+      const partnerName = partner?.name?.toLowerCase().trim();
+
+      const RECEIPT_WEBHOOKS = {
+        'hiraya': 'https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/freight-invoice/receipt',
+      };
+
+      const endpoint = RECEIPT_WEBHOOKS[partnerName] || partner?.apiEndpoint;
       if (endpoint) {
         const payload = {
           shipmentId: invoice.shipment.shipmentId,
