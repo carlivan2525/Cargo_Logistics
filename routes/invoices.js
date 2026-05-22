@@ -186,10 +186,11 @@ router.post('/:id/send210', auth, async (req, res) => {
       const partnerName = partner?.name?.toLowerCase().trim();
 
       const RECEIPT_WEBHOOKS = {
-        'hiraya': 'https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/freight-invoice/receipt',
+        'hiraya':           'https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/freight-invoice/receipt',
+        'bulldog exchange': 'https://landlady-snap-booting.ngrok-free.dev/api/edi/logistics/receive-receipt',
       };
 
-      const endpoint = RECEIPT_WEBHOOKS[partnerName] || partner?.apiEndpoint;
+      const endpoint = partner?.endpoints?.edi210 || RECEIPT_WEBHOOKS[partnerName] || partner?.apiEndpoint;
       if (endpoint) {
         const payload = {
           shipmentId: invoice.shipment.shipmentId,

@@ -177,38 +177,53 @@ router.post('/:id/respond', auth, async (req, res) => {
     }).save();
 
     // POST 990 acknowledgement to partner's system
-    if (status === 'Accepted') {
-      const partner = await require('../models/Partner').findById(tender.partner);
-      const partnerName = partner?.name?.toLowerCase();
+    const partner = await require('../models/Partner').findById(tender.partner);
+    const partnerName = partner?.name?.toLowerCase().trim();
+    const edi990Payload = { shipmentId: tender.shipmentId, status: status.toUpperCase() };
 
-      if (partnerName === 'surplus') {
-        try {
-          await fetch('https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-990', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({
-              shipmentId: tender.shipmentId,
-              status:     'ACCEPTED',
-            }),
-          });
-        } catch (e) { console.error('990 Surplus failed:', e.message); }
-      }
+    if (partnerName === 'surplus') {
+      try {
+        await fetch('https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-990', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(edi990Payload),
+        });
+      } catch (e) { console.error('990 Surplus failed:', e.message); }
+    }
 
-      if (partnerName === 'hiraya') {
-        try {
-          const vehicle = await require('../models/Vehicle').findById(vehicleId);
-          await fetch('https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/cargo/webhook', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({
-              orderId:         tender.orderId || '',
-              shipmentId:      tender.shipmentId || '',
-              status:          'ACCEPTED',
-              assignedVehicle: vehicle?.plate || vehicle?.name || '',
-            }),
-          });
-        } catch (e) { console.error('990 Hiraya failed:', e.message); }
-      }
+    if (partnerName === 'hiraya') {
+      try {
+        const vehicle = await require('../models/Vehicle').findById(vehicleId);
+        await fetch('https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/cargo/webhook', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId:         tender.orderId || '',
+            shipmentId:      tender.shipmentId || '',
+            status:          status.toUpperCase(),
+            assignedVehicle: vehicle?.plate || vehicle?.name || '',
+          }),
+        });
+      } catch (e) { console.error('990 Hiraya failed:', e.message); }
+    }
+
+    if (partnerName === 'bulldog exchange') {
+      try {
+        await fetch('https://landlady-snap-booting.ngrok-free.dev/api/edi/logistics/receive-990', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(edi990Payload),
+        });
+        console.log(`990 Bulldog ${status}`);
+      } catch (e) { console.error('990 Bulldog failed:', e.message); }
+    }
+
+    // Any other partner with endpoints.edi990 configured
+    if (partner?.endpoints?.edi990 &&
+        !['surplus', 'hiraya', 'bulldog exchange'].includes(partnerName)) {
+      try {
+        await fetch(partner.endpoints.edi990, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(edi990Payload),
+        });
+      } catch (e) { console.error('990 dynamic failed:', e.message); }
     }
 
     res.json(await tender.populate(['partner', 'assignedVehicle']));

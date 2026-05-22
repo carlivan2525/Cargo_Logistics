@@ -8,7 +8,13 @@ const partnerSchema = new mongoose.Schema({
   protocol:    { type: String, enum: ['AS2', 'SFTP', 'VAN', 'FTP'], default: 'AS2' },
   status:      { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
   ediDocs:     { type: [String], default: ['204', '990', '214', '210'] },
-  apiEndpoint: { type: String, default: '' },
+  apiEndpoint: { type: String, default: '' }, // legacy / generic
+  endpoints: {
+    edi990: { type: String, default: '' },
+    edi214: { type: String, default: '' },
+    edi210: { type: String, default: '' },
+    invoice: { type: String, default: '' }, // freight invoice notification
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Partner', partnerSchema);

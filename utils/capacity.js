@@ -1,27 +1,45 @@
-/** Parse "4T", "1.5T", "10 tons" → numeric tons. */
-function parseTons(value) {
+/**
+ * Parse weight/capacity values:
+ * - "4T", "1.5T", "10 tons" → numeric kg (multiply by 1000)
+ * - "500kg", "500 kg"       → numeric kg
+ * - "0.5", "500" (plain)    → treated as kg directly
+ */
+function parseKg(value) {
   if (value == null || value === '') return null;
-  const match = String(value).trim().match(/([\d.]+)\s*T/i);
-  return match ? parseFloat(match[1]) : null;
+  const s = String(value).trim();
+
+  // Tons: "4T", "1.5T", "10 tons"
+  const tonsMatch = s.match(/^([\d.]+)\s*T(ons?)?$/i);
+  if (tonsMatch) return parseFloat(tonsMatch[1]) * 1000;
+
+  // Kilograms: "500kg", "500 kg"
+  const kgMatch = s.match(/^([\d.]+)\s*kg$/i);
+  if (kgMatch) return parseFloat(kgMatch[1]);
+
+  // Plain number — treat as kg
+  const plain = parseFloat(s);
+  if (!isNaN(plain)) return plain;
+
+  return null;
 }
 
 function canVehicleCarryLoad(vehicle, loadWeight) {
-  const loadTons = parseTons(loadWeight);
-  const capacityTons = parseTons(vehicle?.capacity);
+  const loadKg     = parseKg(loadWeight);
+  const capacityKg = parseKg(vehicle?.capacity);
 
-  if (loadTons == null) {
+  if (loadKg == null) {
     return { ok: false, message: 'Cannot proceed: load weight is missing or invalid.' };
   }
-  if (capacityTons == null) {
+  if (capacityKg == null) {
     return { ok: false, message: 'Cannot proceed: vehicle capacity is invalid.' };
   }
-  if (loadTons > capacityTons) {
+  if (loadKg > capacityKg) {
     return {
       ok: false,
-      message: `Cannot proceed with this vehicle. Load is ${loadTons}T but ${vehicle.name} (${vehicle.plate}) can only carry ${capacityTons}T.`,
+      message: `Cannot proceed with this vehicle. Load is ${loadKg}kg but ${vehicle.name} (${vehicle.plate}) can only carry ${capacityKg}kg.`,
     };
   }
   return { ok: true };
 }
 
-module.exports = { parseTons, canVehicleCarryLoad };
+module.exports = { parseKg, canVehicleCarryLoad };

@@ -105,17 +105,23 @@ router.put('/:id/status', auth, async (req, res) => {
         description: DESCRIPTION_MAP[status] || '',
       };
 
+      // Use per-partner endpoints.edi214 if available, else fallback to hardcoded
       const WEBHOOK_214 = {
         'surplus': [
           'https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-214',
-          'https://landlady-snap-booting.ngrok-free.dev/api/edi/vendor/receive-214',
         ],
         'hiraya': [
           'https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/214',
         ],
+        'bulldog exchange': [
+          'https://landlady-snap-booting.ngrok-free.dev/api/edi/logistics/receive-214',
+        ],
       };
 
-      const webhookUrls = WEBHOOK_214[partnerName] || [];
+      const dynamicUrl = partner?.endpoints?.edi214;
+      console.log(`[214] partner: "${partnerName}" | dynamic edi214 url: "${dynamicUrl}"`);
+      const webhookUrls = dynamicUrl ? [dynamicUrl] : (WEBHOOK_214[partnerName] || []);
+      console.log(`[214] will POST to:`, webhookUrls);
       for (const webhookUrl of webhookUrls) {
         try {
           const r214 = await fetch(webhookUrl, {
@@ -173,7 +179,14 @@ router.put('/:id/status', auth, async (req, res) => {
         // POST invoice notification to partner
         const partner = await Partner.findById(shipment.partner);
         const partnerName = partner?.name?.toLowerCase().trim();
-        const webhookUrl = INVOICE_WEBHOOKS[partnerName];
+
+        const INVOICE_WEBHOOKS = {
+          'surplus':          'https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-invoice',
+          'hiraya':           'https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/receive/freight-invoice',
+          'bulldog exchange': 'https://landlady-snap-booting.ngrok-free.dev/api/edi/logistics/receive-210',
+        };
+
+        const webhookUrl = partner?.endpoints?.invoice || INVOICE_WEBHOOKS[partnerName];
         const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
         const pdfUrl = `${BASE_URL}/api/invoices/pdf/${pdfToken}`;
 
