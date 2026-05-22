@@ -24,6 +24,7 @@ const loadTenderSchema = new mongoose.Schema({
   originAddress:   { type: originAddressSchema, default: () => ({}) },
   weight:          { type: String, default: '' },
   commodity:       { type: String, default: '' },
+  freightRate:     { type: Number, default: 0 },
   status:          { type: String, enum: ['Pending', 'Accepted', 'Rejected'], default: 'Pending' },
   assignedVehicle: { type: mongoose.Schema.Types.ObjectId, ref: 'Vehicle', default: null },
   rawEdi:          { type: String },

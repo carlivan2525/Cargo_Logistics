@@ -1,7 +1,11 @@
 const express = require('express');
+const crypto = require('crypto');
 const Shipment = require('../models/Shipment');
 const Transmission = require('../models/Transmission');
 const LoadTender = require('../models/LoadTender');
+const Invoice = require('../models/Invoice');
+const FreightRate = require('../models/FreightRate');
+const Partner = require('../models/Partner');
 const auth = require('../middleware/auth');
 const { nextSequentialId } = require('../utils/ids');
 const router = express.Router();
@@ -18,6 +22,12 @@ const DESCRIPTION_MAP = {
   'Pickup':     'Cargo has been picked up from the origin.',
   'In Transit': 'Cargo departed the central warehouse terminal.',
   'Delivered':  'Cargo has been delivered to the destination.',
+};
+
+// Webhook endpoints per partner for invoice notification
+const INVOICE_WEBHOOKS = {
+  'surplus': 'https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-invoice',
+  'hiraya':  'https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/invoice',
 };
 
 // GET all
@@ -46,7 +56,7 @@ router.patch('/:id/transaction', auth, async (req, res) => {
   }
 });
 
-// PUT update status — auto-sends 214
+// PUT update status — auto-sends 214, auto-generates invoice on Delivered
 router.put('/:id/status', auth, async (req, res) => {
   try {
     const { status } = req.body;
@@ -70,11 +80,11 @@ router.put('/:id/status', auth, async (req, res) => {
         payload:   JSON.stringify({ shipmentId: shipment.shipmentId, status }),
       }).save();
 
-      // Get destination city from tender's route (e.g. "Manila - Calamba" → "Calamba")
+      // Get destination city
       let location = '';
       if (shipment.tender) {
         const tender = await LoadTender.findById(shipment.tender);
-        if (tender && tender.route) {
+        if (tender?.route) {
           const parts = tender.route.split('-');
           location = parts.length > 1 ? parts[parts.length - 1].trim() : tender.route.trim();
         }
@@ -85,7 +95,6 @@ router.put('/:id/status', auth, async (req, res) => {
       }
 
       // POST 214 to partner's system
-      const Partner = require('../models/Partner');
       const partner = await Partner.findById(shipment.partner);
       const partnerName = partner?.name?.toLowerCase().trim();
 
@@ -109,15 +118,81 @@ router.put('/:id/status', auth, async (req, res) => {
       const webhookUrls = WEBHOOK_214[partnerName] || [];
       for (const webhookUrl of webhookUrls) {
         try {
-          console.log(`214 POST to ${webhookUrl}:`, payload214);
           const r214 = await fetch(webhookUrl, {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify(payload214),
           });
-          console.log(`214 POST response from ${webhookUrl}: ${r214.status}`);
+          console.log(`214 POST to ${webhookUrl}: ${r214.status}`);
         } catch (err214) {
           console.error(`214 POST to ${webhookUrl} failed:`, err214.message);
+        }
+      }
+    }
+
+    // Auto-generate freight invoice when Delivered
+    if (status === 'Delivered') {
+      const existing = await Invoice.findOne({ shipment: shipment._id });
+      if (!existing) {
+        // Get vehicle type
+        let vehicleType = null;
+        if (shipment.vehicle) {
+          const Vehicle = require('../models/Vehicle');
+          const vehicle = await Vehicle.findById(shipment.vehicle);
+          vehicleType = vehicle?.type || null;
+        }
+
+        // Match route to rate table
+        let amount = 0;
+        const shipmentRoute = (shipment.route || '').trim();
+        const escaped = shipmentRoute.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const rateDoc = await FreightRate.findOne({
+          route: { $regex: new RegExp(`^${escaped}$`, 'i') }
+        });
+        if (rateDoc && vehicleType) {
+          const rateMap = { L300: rateDoc.rateL300, Expander: rateDoc.rateExpander, Truck: rateDoc.rateTruck };
+          amount = rateMap[vehicleType] || 0;
+        }
+
+        // Generate a public token for PDF access
+        const pdfToken = crypto.randomBytes(32).toString('hex');
+
+        const invoiceId = await nextSequentialId(Invoice, 'invoiceId', 'INV');
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 30);
+        const invoice = await new Invoice({
+          invoiceId,
+          partner:  shipment.partner,
+          shipment: shipment._id,
+          amount,
+          dueDate,
+          status:   'Pending',
+          pdfToken,
+        }).save();
+
+        // POST invoice notification to partner
+        const partner = await Partner.findById(shipment.partner);
+        const partnerName = partner?.name?.toLowerCase().trim();
+        const webhookUrl = INVOICE_WEBHOOKS[partnerName];
+        const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+        const pdfUrl = `${BASE_URL}/api/invoices/pdf/${pdfToken}`;
+
+        if (webhookUrl) {
+          try {
+            await fetch(webhookUrl, {
+              method:  'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                shipmentId:    shipment.shipmentId,
+                invoiceNumber: invoiceId,
+                status:        'Pending',
+                totalAmount:   amount,
+              }),
+            });
+            console.log(`Invoice posted to ${partnerName}: ${invoiceId}`);
+          } catch (err) {
+            console.error(`Invoice POST to ${partnerName} failed:`, err.message);
+          }
         }
       }
     }

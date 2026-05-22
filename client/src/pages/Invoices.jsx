@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { FileText, Search, AlertTriangle, CheckCircle2, Clock, Send, Plus, X } from 'lucide-react';
+import { FileText, Search, AlertTriangle, CheckCircle2, Clock, Send, Plus, X, CreditCard, Download } from 'lucide-react';
 import { api } from '../api';
+import { usePolling } from '../hooks/usePolling';
 
 const STATUS_STYLE = {
   'Paid':    'bg-green-500/20 text-green-400',
@@ -131,11 +132,36 @@ function Invoices() {
       .catch(console.error)
       .finally(() => setLoading(false));
 
-  useEffect(() => { load(); }, []);
+  usePolling(load);
 
   const send210 = async (id) => {
     try {
       const updated = await api.post(`/invoices/${id}/send210`, {});
+      setInvoices(prev => prev.map(i => i._id === id ? updated : i));
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const downloadPdf = (inv) => {
+    const token = localStorage.getItem('token');
+    const base = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const url = `${base}/invoices/${inv._id}/pdf`;
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.blob())
+      .then(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${inv.invoiceId}.pdf`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      })
+      .catch(err => alert(err.message));
+  };
+
+  const markPaid = async (id) => {
+    try {
+      const updated = await api.put(`/invoices/${id}/pay`, {});
       setInvoices(prev => prev.map(i => i._id === id ? updated : i));
     } catch (err) {
       alert(err.message);
@@ -241,12 +267,26 @@ function Invoices() {
                     <span className={`text-xs px-2 py-1 rounded-full ${STATUS_STYLE[inv.status]}`}>{inv.status}</span>
                   </td>
                   <td className="px-5 py-3 text-right">
-                    {!inv.ediSent && (
-                      <button onClick={() => send210(inv._id)}
-                        className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition cursor-pointer bg-transparent border-none ml-auto">
-                        <Send size={11} /> Send 210
-                      </button>
-                    )}
+                    <div className="flex items-center justify-end gap-2">
+                      {inv.status === 'Pending' && (
+                        <button onClick={() => markPaid(inv._id)}
+                          className="flex items-center gap-1 text-xs text-green-400 hover:text-green-300 transition cursor-pointer bg-transparent border-none">
+                          <CreditCard size={11} /> Confirm Payment
+                        </button>
+                      )}
+                      {inv.status === 'Paid' && (
+                        <button onClick={() => downloadPdf(inv)}
+                          className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition cursor-pointer bg-transparent border-none">
+                          <Download size={11} /> Download PDF
+                        </button>
+                      )}
+                      {!inv.ediSent && (
+                        <button onClick={() => send210(inv._id)}
+                          className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition cursor-pointer bg-transparent border-none">
+                          <Send size={11} /> Send 210
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

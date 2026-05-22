@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Truck, FileText, Inbox,
   ArrowUpDown, Globe, Settings as SettingsIcon,
-  Info, LogOut, CheckCircle2, AlertTriangle, Package, FileCheck
+  Info, LogOut, CheckCircle2, AlertTriangle, Package, FileCheck, DollarSign
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import logo from '../assets/CarGO-logo.png';
@@ -14,6 +14,7 @@ import Partners from './Partners';
 import About from './About';
 import Settings from './Settings';
 import LoadTenders from './LoadTenders';
+import FreightRates from './FreightRates';
 import { api } from '../api';
 import { usePolling } from '../hooks/usePolling';
 import ShipmentsChart from '../components/ShipmentsChart';
@@ -26,6 +27,7 @@ const navSections = [
       { icon: Inbox,           label: 'Load Tenders' },
       { icon: Truck,           label: 'Shipments' },
       { icon: FileText,        label: 'Invoices' },
+      { icon: DollarSign,      label: 'Freight Rates' },
     ],
   },
   {
@@ -57,6 +59,7 @@ const SLUG_TO_LABEL = {
   'load-tenders':   'Load Tenders',
   'shipments':      'Shipments',
   'invoices':       'Invoices',
+  'freight-rates':  'Freight Rates',
   'transmissions':  'Transmissions',
   'partners':       'Partners',
   'settings':       'Settings',
@@ -96,7 +99,7 @@ function Dashboard({ user, onLogout }) {
       setCounts({
         tenders:   tenders.filter(t => t.status === 'Pending').length,
         shipments: shipments.filter(s => s.status === 'In Transit').length,
-        invoices:  invoices.filter(i => i.status === 'Overdue').length,
+        invoices:  invoices.filter(i => i.status === 'Pending').length,
       });
       setStats({
         activeShipments: shipments.filter(s => ['Pickup','In Transit'].includes(s.status)).length,
@@ -192,6 +195,7 @@ function Dashboard({ user, onLogout }) {
           {activeNav === 'Load Tenders'  && <LoadTenders />}
           {activeNav === 'Shipments'     && <ShipmentsTable />}
           {activeNav === 'Invoices'      && <Invoices />}
+          {activeNav === 'Freight Rates' && <FreightRates />}
           {activeNav === 'Transmissions' && <Transmissions />}
           {activeNav === 'Partners'      && <Partners />}
           {activeNav === 'Settings'      && <Settings onLogout={onLogout} />}
