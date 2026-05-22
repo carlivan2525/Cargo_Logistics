@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { FileText, Search, AlertTriangle, CheckCircle2, Clock, Send, Plus, X, CreditCard, Download } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, Search, AlertTriangle, CheckCircle2, Clock, Send, Download } from 'lucide-react';
 import { api } from '../api';
 import { usePolling } from '../hooks/usePolling';
 
@@ -124,7 +124,6 @@ function Invoices() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [loading, setLoading] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
 
   const load = () =>
     api.get('/invoices')
@@ -188,7 +187,6 @@ function Invoices() {
 
   return (
     <div className="space-y-4">
-      {showCreate && <CreateInvoiceModal onClose={() => setShowCreate(false)} onCreated={load} />}
 
       <div className="grid grid-cols-3 gap-4">
         {[
@@ -227,10 +225,6 @@ function Invoices() {
               <option value="All">All Status</option>
               {['Paid', 'Pending', 'Overdue', 'Draft'].map(s => <option key={s} value={s}>{s}</option>)}
             </select>
-            <button onClick={() => setShowCreate(true)}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition cursor-pointer border-none">
-              <Plus size={12} /> New Invoice
-            </button>
           </div>
         </div>
 
@@ -268,19 +262,13 @@ function Invoices() {
                   </td>
                   <td className="px-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      {inv.status === 'Pending' && (
-                        <button onClick={() => markPaid(inv._id)}
-                          className="flex items-center gap-1 text-xs text-green-400 hover:text-green-300 transition cursor-pointer bg-transparent border-none">
-                          <CreditCard size={11} /> Confirm Payment
-                        </button>
-                      )}
                       {inv.status === 'Paid' && (
                         <button onClick={() => downloadPdf(inv)}
                           className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition cursor-pointer bg-transparent border-none">
                           <Download size={11} /> Download PDF
                         </button>
                       )}
-                      {!inv.ediSent && (
+                      {inv.status === 'Paid' && !inv.ediSent && (
                         <button onClick={() => send210(inv._id)}
                           className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition cursor-pointer bg-transparent border-none">
                           <Send size={11} /> Send 210
