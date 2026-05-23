@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Wallet, ArrowDownCircle, ArrowUpCircle, AlertCircle } from 'lucide-react';
+import { Wallet, ArrowDownCircle, ArrowUpCircle, AlertCircle, FileText } from 'lucide-react';
 import { api } from '../api';
 import { usePolling } from '../hooks/usePolling';
 
@@ -68,18 +68,28 @@ function WithdrawModal({ balance, onConfirm, onCancel }) {
 }
 
 function Ledger() {
-  const [balance, setBalance]   = useState(0);
-  const [entries, setEntries]   = useState([]);
-  const [loading, setLoading]   = useState(true);
+  const [balance, setBalance]     = useState(0);
+  const [entries, setEntries]     = useState([]);
+  const [invoices, setInvoices]   = useState([]);
+  const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
 
   const load = () =>
-    api.get('/ledger')
-      .then(data => { setBalance(data.balance); setEntries(data.entries); })
+    Promise.all([api.get('/ledger'), api.get('/invoices')])
+      .then(([ledger, invs]) => {
+        setBalance(ledger.balance);
+        setEntries(ledger.entries);
+        setInvoices(invs);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
 
   usePolling(load);
+
+  const totalBilled    = invoices.reduce((s, i) => s + (i.amount || 0), 0);
+  const paidRevenue    = invoices.filter(i => i.status === 'Paid').reduce((s, i) => s + (i.amount || 0), 0);
+  const collectionRate = totalBilled > 0 ? Math.round((paidRevenue / totalBilled) * 100) : 0;
+  const paidCount      = invoices.filter(i => i.status === 'Paid').length;
 
   const handleWithdraw = async (amount) => {
     try {
@@ -100,6 +110,33 @@ function Ledger() {
       {showModal && <WithdrawModal balance={balance} onConfirm={handleWithdraw} onCancel={() => setShowModal(false)} />}
 
       <div className="space-y-4 flex flex-col h-full">
+
+        {/* Invoice summary strip */}
+        <div className="grid grid-cols-3 gap-4 shrink-0">
+          <div className="bg-card rounded-xl border border-app p-4">
+            <div className="flex items-center gap-2 text-gray-400 text-xs mb-2">
+              <FileText size={12} /> Total Billed
+            </div>
+            <p className="text-xl font-bold text-app">{fmt(totalBilled)}</p>
+            <p className="text-xs text-gray-500 mt-1">{invoices.length} invoice{invoices.length !== 1 ? 's' : ''}</p>
+          </div>
+          <div className="bg-card rounded-xl border border-app p-4">
+            <div className="flex items-center gap-2 text-gray-400 text-xs mb-2">
+              <ArrowDownCircle size={12} /> Collected
+            </div>
+            <p className="text-xl font-bold text-green-400">{fmt(paidRevenue)}</p>
+            <p className="text-xs text-gray-500 mt-1">{paidCount} paid</p>
+          </div>
+          <div className="bg-card rounded-xl border border-app p-4">
+            <div className="flex items-center gap-2 text-gray-400 text-xs mb-2">
+              <Wallet size={12} /> Collection Rate
+            </div>
+            <p className={`text-xl font-bold ${collectionRate >= 80 ? 'text-green-400' : collectionRate >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+              {collectionRate}%
+            </p>
+            <p className="text-xs text-gray-500 mt-1">paid vs total billed</p>
+          </div>
+        </div>
 
         {/* Balance card */}
         <div className="bg-card rounded-xl border border-app p-6 flex items-center justify-between shrink-0">

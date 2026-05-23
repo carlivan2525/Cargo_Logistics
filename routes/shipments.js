@@ -4,10 +4,10 @@ const Shipment = require('../models/Shipment');
 const Transmission = require('../models/Transmission');
 const LoadTender = require('../models/LoadTender');
 const Invoice = require('../models/Invoice');
-const FreightRate = require('../models/FreightRate');
 const Partner = require('../models/Partner');
 const auth = require('../middleware/auth');
 const { nextSequentialId } = require('../utils/ids');
+const { calculateFreight } = require('../utils/pricing');
 const router = express.Router();
 
 const EDI_214_STATUSES = ['Pickup', 'In Transit', 'Delivered'];
@@ -22,12 +22,6 @@ const DESCRIPTION_MAP = {
   'Pickup':     'Cargo has been picked up from the origin.',
   'In Transit': 'Cargo departed the central warehouse terminal.',
   'Delivered':  'Cargo has been delivered to the destination.',
-};
-
-// Webhook endpoints per partner for invoice notification
-const INVOICE_WEBHOOKS = {
-  'surplus': 'https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-invoice',
-  'hiraya':  'https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/receive/freight-invoice',
 };
 
 // GET all
@@ -105,7 +99,6 @@ router.put('/:id/status', auth, async (req, res) => {
         description: DESCRIPTION_MAP[status] || '',
       };
 
-      // Use per-partner endpoints.edi214 if available, else fallback to hardcoded
       const WEBHOOK_214 = {
         'surplus': [
           'https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-214',
@@ -148,16 +141,17 @@ router.put('/:id/status', auth, async (req, res) => {
           vehicleType = vehicle?.type || null;
         }
 
-        // Match route to rate table
+        // Calculate amount based on distance + vehicle type
         let amount = 0;
         const shipmentRoute = (shipment.route || '').trim();
-        const escaped = shipmentRoute.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const rateDoc = await FreightRate.findOne({
-          route: { $regex: new RegExp(`^${escaped}$`, 'i') }
-        });
-        if (rateDoc && vehicleType) {
-          const rateMap = { L300: rateDoc.rateL300, Expander: rateDoc.rateExpander, Truck: rateDoc.rateTruck };
-          amount = rateMap[vehicleType] || 0;
+        if (shipmentRoute && vehicleType) {
+          const pricing = calculateFreight(shipmentRoute, vehicleType);
+          amount = pricing.amount || 0;
+          if (pricing.error) {
+            console.warn(`[pricing] ${pricing.error} — route: "${shipmentRoute}"`);
+          } else {
+            console.log(`[pricing] ${shipmentRoute} | ${vehicleType} | ${pricing.distanceKm}km | PHP ${amount}`);
+          }
         }
 
         // Generate a public token for PDF access

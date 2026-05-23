@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Truck, FileText, Inbox,
   ArrowUpDown, Globe, Settings as SettingsIcon,
-  Info, LogOut, CheckCircle2, AlertTriangle, Package, FileCheck, DollarSign, Wallet
+  Info, LogOut, CheckCircle2, AlertTriangle, Package, FileCheck, Calculator, Wallet
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import logo from '../assets/CarGO-logo.png';
@@ -19,6 +19,7 @@ import Ledger from './Ledger';
 import { api } from '../api';
 import { usePolling } from '../hooks/usePolling';
 import ShipmentsChart from '../components/ShipmentsChart';
+import InvoiceAnalytics from '../components/InvoiceAnalytics';
 
 const navSections = [
   {
@@ -28,7 +29,7 @@ const navSections = [
       { icon: Inbox,           label: 'Load Tenders' },
       { icon: Truck,           label: 'Shipments' },
       { icon: FileText,        label: 'Invoices' },
-      { icon: DollarSign,      label: 'Freight Rates' },
+      { icon: Calculator,      label: 'Freight Rates' },
       { icon: Wallet,          label: 'Ledger' },
     ],
   },
@@ -88,6 +89,7 @@ function Dashboard({ user, onLogout }) {
   const [recentShipments, setRecentShipments] = useState([]);
   const [recentEdi, setRecentEdi]             = useState([]);
   const [allShipments, setAllShipments]       = useState([]);
+  const [allInvoices, setAllInvoices]         = useState([]);
 
   const fetchDashboard = () => {
     const token = localStorage.getItem('token');
@@ -113,6 +115,7 @@ function Dashboard({ user, onLogout }) {
       setRecentShipments(shipments.slice(0, 5));
       setAllShipments(shipments);
       setRecentEdi(transmissions.slice(0, 5));
+      setAllInvoices(invoices);
     }).catch(() => {});
   };
 
@@ -194,7 +197,7 @@ function Dashboard({ user, onLogout }) {
         </header>
 
         {/* Content */}
-        <main className={`flex-1 overflow-hidden ${activeNav === 'Load Tenders' ? 'flex flex-col p-6' : 'overflow-y-auto p-6 space-y-5'}`}>
+        <main className={`flex-1 overflow-hidden ${activeNav === 'Load Tenders' || activeNav === 'Freight Rates' ? 'flex flex-col p-6' : 'overflow-y-auto p-6 space-y-5'}`}>
           {activeNav === 'Load Tenders'  && <LoadTenders />}
           {activeNav === 'Shipments'     && <ShipmentsTable key="shipments" />}
           {activeNav === 'Invoices'      && <Invoices />}
@@ -304,6 +307,9 @@ function Dashboard({ user, onLogout }) {
 
           {/* Shipments Over Time */}
           <ShipmentsChart shipments={allShipments} />
+
+          {/* Invoice Analytics */}
+          <InvoiceAnalytics invoices={allInvoices} />
 
           </>)}
         </main>
