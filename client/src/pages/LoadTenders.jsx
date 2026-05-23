@@ -6,9 +6,10 @@ import { useToast } from '../components/Toast';
 import { usePolling } from '../hooks/usePolling';
 
 const VEHICLE_TYPE_STYLE = {
-  'L300':     'bg-blue-500/20 text-blue-400',
-  'Truck':    'bg-orange-500/20 text-orange-400',
-  'Expander': 'bg-purple-500/20 text-purple-400',
+  'L300':       'bg-blue-500/20 text-blue-400',
+  'Truck':      'bg-orange-500/20 text-orange-400',
+  'Expander':   'bg-purple-500/20 text-purple-400',
+  'Motorcycle': 'bg-green-500/20 text-green-400',
 };
 
 const STATUS_STYLE = {
@@ -269,6 +270,7 @@ function LoadTenders() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
   const [filterStatus, setFilterStatus] = useState('All');
+  const [search, setSearch] = useState('');
   const { show: showToast, node: toastNode } = useToast();
 
   const load = async () => {
@@ -309,6 +311,9 @@ function LoadTenders() {
   const fleetCount = vehicles.length;
 
   const filtered = filterStatus === 'All' ? tenders : tenders.filter(t => t.status === filterStatus);
+  const displayed = search.trim()
+    ? filtered.filter(t => (t.shipmentId ?? '').toLowerCase().includes(search.trim().toLowerCase()))
+    : filtered;
 
   const fmt = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
   const fmtTime = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date(d).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }) : '—';
@@ -329,6 +334,13 @@ function LoadTenders() {
             <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">{fleetCount} trucks in fleet</span>
           </div>
           <div className="flex items-center gap-1">
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search shipment ID..."
+              className="text-xs px-3 py-1.5 rounded-lg bg-input border border-app text-app placeholder-gray-600 focus:outline-none focus:border-blue-500 w-44 mr-2"
+            />
             {[
               { label: 'All',      count: tenders.length },
               { label: 'Pending',  count: pending },
@@ -354,7 +366,7 @@ function LoadTenders() {
           <table className="w-full text-sm min-w-[1100px]">
             <thead className="sticky top-0 bg-card z-10">
               <tr className="text-gray-500 text-xs border-b border-app">
-                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Tender ID</th>
+                <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Shipment ID</th>
                 <th className="text-left px-4 py-2.5 font-medium">Partner</th>
                 <th className="text-left px-4 py-2.5 font-medium">Pickup</th>
                 <th className="text-left px-4 py-2.5 font-medium">Est. delivery</th>
@@ -365,12 +377,12 @@ function LoadTenders() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 && (
+              {displayed.length === 0 && (
                 <tr><td colSpan={8} className="text-center py-10 text-gray-600 text-sm">No load tenders found.</td></tr>
               )}
-              {filtered.map(t => (
+              {displayed.map(t => (
                 <tr key={t._id} className="border-b border-subtle hover:bg-hover transition">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-400 whitespace-nowrap">{t.tenderId}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-400 whitespace-nowrap">{t.shipmentId ?? '—'}</td>
                   <td className="px-4 py-3 text-xs text-app font-medium whitespace-nowrap">{t.partner?.name}</td>
                   <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{fmt(t.pickupDate)}</td>
                   <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{fmt(t.deliveryDate)}</td>

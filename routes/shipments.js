@@ -176,9 +176,25 @@ router.put('/:id/status', auth, async (req, res) => {
           pdfToken,
         }).save();
 
-        // POST invoice notification to partner
+        // Log EDI 210 transmission
+        const trx210Id = await nextSequentialId(Transmission, 'transmissionId', 'TRX');
+        await new Transmission({
+          transmissionId: trx210Id,
+          ediCode:   '210',
+          label:     'Invoice',
+          direction: 'OUT',
+          partner:   shipment.partner,
+          shipment:  shipment._id,
+          status:    'Sent',
+          isaSegment: `ISA*00*...*ZZ*CARGO*${new Date().toISOString().slice(0,10).replace(/-/g,'')}*^*00501*${trx210Id.replace('TRX-', '').padStart(9,'0')}*0*P*>`,
+          payload:   JSON.stringify({ invoiceId, amount }),
+        }).save();
+
+        // Auto-POST 210 to partner's endpoint
         const partner = await Partner.findById(shipment.partner);
         const partnerName = partner?.name?.toLowerCase().trim();
+        const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+        const pdfUrl = `${BASE_URL}/api/invoices/pdf/${pdfToken}`;
 
         const INVOICE_WEBHOOKS = {
           'surplus':          'https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-invoice',
@@ -187,26 +203,36 @@ router.put('/:id/status', auth, async (req, res) => {
         };
 
         const webhookUrl = partner?.endpoints?.invoice || INVOICE_WEBHOOKS[partnerName];
-        const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-        const pdfUrl = `${BASE_URL}/api/invoices/pdf/${pdfToken}`;
-
         if (webhookUrl) {
           try {
             await fetch(webhookUrl, {
               method:  'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                shipmentId: shipment.shipmentId,
-                invoiceId:  invoiceId,
-                status:     'Pending',
+                shipmentId:  shipment.shipmentId,
+                invoiceId,
                 totalAmount: amount,
+                status:      'Pending',
+                pdfUrl,
               }),
             });
-            console.log(`Invoice posted to ${partnerName}: ${invoiceId}`);
+            console.log(`210 auto-posted to ${partnerName}: ${invoiceId}`);
+            await Invoice.findByIdAndUpdate(invoice._id, { ediSent: true });
           } catch (err) {
-            console.error(`Invoice POST to ${partnerName} failed:`, err.message);
+            console.error(`210 auto-post to ${partnerName} failed:`, err.message);
           }
         }
+
+        console.log(`Invoice ${invoiceId} generated for ${shipment.shipmentId}`);
+      }
+    }
+
+    // If reverting away from Delivered, delete the auto-generated invoice (if not yet paid)
+    if (status !== 'Delivered') {
+      const inv = await Invoice.findOne({ shipment: shipment._id, status: { $ne: 'Paid' } });
+      if (inv) {
+        await Invoice.deleteOne({ _id: inv._id });
+        console.log(`Invoice ${inv.invoiceId} deleted — shipment reverted from Delivered`);
       }
     }
 

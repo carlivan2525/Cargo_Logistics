@@ -3,6 +3,7 @@ const PDFDocument = require('pdfkit');
 const Invoice = require('../models/Invoice');
 const Transmission = require('../models/Transmission');
 const Partner = require('../models/Partner');
+const Ledger = require('../models/Ledger');
 const auth = require('../middleware/auth');
 const { nextSequentialId } = require('../utils/ids');
 const router = express.Router();
@@ -125,26 +126,50 @@ router.post('/', auth, async (req, res) => {
 router.post('/webhook/paid', async (req, res) => {
   try {
     const { invoiceNumber, shipmentId } = req.body;
-    const query = invoiceNumber
-      ? { invoiceId: invoiceNumber }
-      : { 'shipment': null }; // fallback — will be handled below
 
     let invoice = invoiceNumber
-      ? await Invoice.findOne({ invoiceId: invoiceNumber })
+      ? await Invoice.findOne({ invoiceId: invoiceNumber }).populate('partner', 'name').populate('shipment', 'shipmentId')
       : null;
 
     // fallback: find by shipmentId
     if (!invoice && shipmentId) {
       const Shipment = require('../models/Shipment');
       const shipment = await Shipment.findOne({ shipmentId });
-      if (shipment) invoice = await Invoice.findOne({ shipment: shipment._id });
+      if (shipment) invoice = await Invoice.findOne({ shipment: shipment._id }).populate('partner', 'name').populate('shipment', 'shipmentId');
     }
 
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
 
     invoice.status = 'Paid';
     await invoice.save();
-    console.log(`Invoice ${invoice.invoiceId} marked Paid via webhook`);
+
+    // Credit ledger
+    const lastEntry = await Ledger.findOne().sort({ createdAt: -1 });
+    const currentBalance = lastEntry?.balance ?? 0;
+    await Ledger.create({
+      type:        'credit',
+      amount:      invoice.amount,
+      description: `Payment received — ${invoice.invoiceId}`,
+      invoice:     invoice._id,
+      partner:     invoice.partner._id,
+      balance:     currentBalance + invoice.amount,
+    });
+
+    // Log EDI 820 — Payment Order / Remittance Advice
+    const trx820 = await nextSequentialId(Transmission, 'transmissionId', 'TRX');
+    await new Transmission({
+      transmissionId: trx820,
+      ediCode:   '820',
+      label:     'Payment Remittance',
+      direction: 'IN',
+      partner:   invoice.partner._id,
+      shipment:  invoice.shipment?._id,
+      status:    'Received',
+      isaSegment: `ISA*00*...*ZZ*${invoice.partner?.name?.toUpperCase() || 'PARTNER'}*${new Date().toISOString().slice(0,10).replace(/-/g,'')}*^*00501*${trx820.replace('TRX-', '').padStart(9,'0')}*0*P*>`,
+      payload:   JSON.stringify({ invoiceId: invoice.invoiceId, amount: invoice.amount, paidVia: 'webhook' }),
+    }).save();
+
+    console.log(`Invoice ${invoice.invoiceId} marked Paid via webhook — EDI 820 logged`);
     res.json({ message: 'Marked as paid', invoiceId: invoice.invoiceId });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -177,7 +202,22 @@ router.post('/:id/send210', auth, async (req, res) => {
       payload:   JSON.stringify({ invoiceId: invoice.invoiceId, amount: invoice.amount, pdfUrl }),
     }).save();
 
-    invoice.ediSent = true;
+    // Log 997 acknowledgement transmission
+    const trx997Id = await nextSequentialId(Transmission, 'transmissionId', 'TRX');
+    await new Transmission({
+      transmissionId: trx997Id,
+      ediCode:   '997',
+      label:     'Functional Acknowledgement',
+      direction: 'OUT',
+      partner:   invoice.partner._id,
+      shipment:  invoice.shipment._id,
+      status:    'Sent',
+      isaSegment: `ISA*00*...*ZZ*CARGO*${new Date().toISOString().slice(0,10).replace(/-/g,'')}*^*00501*${trx997Id.replace('TRX-', '').padStart(9,'0')}*0*P*>`,
+      payload:   JSON.stringify({ invoiceId: invoice.invoiceId, acknowledgedEdi: '210' }),
+    }).save();
+
+    invoice.ediSent    = true;
+    invoice.edi997Sent = true;
     await invoice.save();
 
     // POST 210 to partner's API with pdfUrl
@@ -222,6 +262,33 @@ router.put('/:id/pay', auth, async (req, res) => {
       { new: true }
     ).populate('partner', 'name').populate('shipment', 'shipmentId route');
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+
+    // Credit ledger
+    const lastEntry = await Ledger.findOne().sort({ createdAt: -1 });
+    const currentBalance = lastEntry?.balance ?? 0;
+    await Ledger.create({
+      type:        'credit',
+      amount:      invoice.amount,
+      description: `Payment received — ${invoice.invoiceId}`,
+      invoice:     invoice._id,
+      partner:     invoice.partner._id,
+      balance:     currentBalance + invoice.amount,
+    });
+
+    // Log EDI 820 — Payment Order / Remittance Advice
+    const trx820 = await nextSequentialId(Transmission, 'transmissionId', 'TRX');
+    await new Transmission({
+      transmissionId: trx820,
+      ediCode:   '820',
+      label:     'Payment Remittance',
+      direction: 'IN',
+      partner:   invoice.partner._id,
+      shipment:  invoice.shipment?._id,
+      status:    'Received',
+      isaSegment: `ISA*00*...*ZZ*${invoice.partner?.name?.toUpperCase() || 'PARTNER'}*${new Date().toISOString().slice(0,10).replace(/-/g,'')}*^*00501*${trx820.replace('TRX-', '').padStart(9,'0')}*0*P*>`,
+      payload:   JSON.stringify({ invoiceId: invoice.invoiceId, amount: invoice.amount, paidVia: 'manual' }),
+    }).save();
+
     res.json(invoice);
   } catch { res.status(500).json({ message: 'Server error' }); }
 });

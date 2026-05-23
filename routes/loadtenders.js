@@ -140,9 +140,11 @@ router.post('/:id/respond', auth, async (req, res) => {
 
       const o = tender.originAddress || {};
       const existingShipment = await Shipment.findOne({ shipmentId: tender.shipmentId });
-      if (!existingShipment) {
+      if (!existingShipment || existingShipment.status === 'Delivered') {
+        // Generate a unique shipmentId if the original is already taken by a delivered shipment
+        const shipmentId = existingShipment ? `${tender.shipmentId}-${Date.now()}` : tender.shipmentId;
         await new Shipment({
-          shipmentId:  tender.shipmentId,
+          shipmentId,
           route:       tender.route,
           origin:      o.city || '',
           partner:     tender.partner,

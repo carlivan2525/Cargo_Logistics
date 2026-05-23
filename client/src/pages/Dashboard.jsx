@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Truck, FileText, Inbox,
   ArrowUpDown, Globe, Settings as SettingsIcon,
-  Info, LogOut, CheckCircle2, AlertTriangle, Package, FileCheck, DollarSign
+  Info, LogOut, CheckCircle2, AlertTriangle, Package, FileCheck, DollarSign, Wallet
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import logo from '../assets/CarGO-logo.png';
@@ -15,6 +15,7 @@ import About from './About';
 import Settings from './Settings';
 import LoadTenders from './LoadTenders';
 import FreightRates from './FreightRates';
+import Ledger from './Ledger';
 import { api } from '../api';
 import { usePolling } from '../hooks/usePolling';
 import ShipmentsChart from '../components/ShipmentsChart';
@@ -28,6 +29,7 @@ const navSections = [
       { icon: Truck,           label: 'Shipments' },
       { icon: FileText,        label: 'Invoices' },
       { icon: DollarSign,      label: 'Freight Rates' },
+      { icon: Wallet,          label: 'Ledger' },
     ],
   },
   {
@@ -60,6 +62,7 @@ const SLUG_TO_LABEL = {
   'shipments':      'Shipments',
   'invoices':       'Invoices',
   'freight-rates':  'Freight Rates',
+  'ledger':         'Ledger',
   'transmissions':  'Transmissions',
   'partners':       'Partners',
   'settings':       'Settings',
@@ -193,9 +196,10 @@ function Dashboard({ user, onLogout }) {
         {/* Content */}
         <main className={`flex-1 overflow-hidden ${activeNav === 'Load Tenders' ? 'flex flex-col p-6' : 'overflow-y-auto p-6 space-y-5'}`}>
           {activeNav === 'Load Tenders'  && <LoadTenders />}
-          {activeNav === 'Shipments'     && <ShipmentsTable />}
+          {activeNav === 'Shipments'     && <ShipmentsTable key="shipments" />}
           {activeNav === 'Invoices'      && <Invoices />}
           {activeNav === 'Freight Rates' && <FreightRates />}
+          {activeNav === 'Ledger'        && <Ledger />}
           {activeNav === 'Transmissions' && <Transmissions />}
           {activeNav === 'Partners'      && <Partners />}
           {activeNav === 'Settings'      && <Settings onLogout={onLogout} />}

@@ -55,6 +55,7 @@ app.use('/api/shipments',     require('./routes/shipments'));
 app.use('/api/invoices',      require('./routes/invoices'));
 app.use('/api/transmissions', require('./routes/transmissions'));
 app.use('/api/freightrates',  require('./routes/freightrates'));
+app.use('/api/ledger',        require('./routes/ledger'));
 
 // Local development: start listening
 if (require.main === module) {

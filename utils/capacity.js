@@ -28,7 +28,8 @@ function canVehicleCarryLoad(vehicle, loadWeight) {
   const capacityKg = parseKg(vehicle?.capacity);
 
   if (loadKg == null) {
-    return { ok: false, message: 'Cannot proceed: load weight is missing or invalid.' };
+    // No weight provided — skip capacity check, allow acceptance
+    return { ok: true };
   }
   if (capacityKg == null) {
     return { ok: false, message: 'Cannot proceed: vehicle capacity is invalid.' };

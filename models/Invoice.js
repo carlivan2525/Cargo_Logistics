@@ -8,8 +8,9 @@ const invoiceSchema = new mongoose.Schema({
   taxAmount: { type: Number, default: 0 },
   dueDate:   { type: Date, required: true },
   status:    { type: String, enum: ['Draft', 'Pending', 'Paid', 'Overdue'], default: 'Pending' },
-  ediSent:   { type: Boolean, default: false },
-  pdfToken:  { type: String, default: null }, // public access token for PDF link
+  ediSent:    { type: Boolean, default: false },
+  edi997Sent: { type: Boolean, default: false },
+  pdfToken:   { type: String, default: null }, // public access token for PDF link
 }, { timestamps: true });
 
 module.exports = mongoose.model('Invoice', invoiceSchema);

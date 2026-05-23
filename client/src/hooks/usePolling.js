@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
  * Calls `fn` immediately, then every `interval` ms while the component is mounted.
  * Stops polling when the component unmounts.
  */
-export function usePolling(fn, interval = 10000) {
+export function usePolling(fn, interval = 4000) {
   const fnRef = useRef(fn);
   fnRef.current = fn;
 

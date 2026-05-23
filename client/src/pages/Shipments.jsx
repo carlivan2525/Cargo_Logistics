@@ -25,6 +25,15 @@ const MILESTONES = [
 ];
 const MILESTONE_ORDER = ['Pending', 'Pickup', 'In Transit', 'Delivered'];
 
+function isSkippingStep(from, to) {
+  const fromIdx = MILESTONE_ORDER.indexOf(from);
+  const toIdx   = MILESTONE_ORDER.indexOf(to);
+  // Exception is always allowed; going backwards is allowed; only block forward skips
+  if (toIdx === -1) return false; // Exception
+  if (fromIdx === -1) return false;
+  return toIdx - fromIdx > 1;
+}
+
 function MilestoneTracker({ status }) {
   const currentIdx = MILESTONE_ORDER.indexOf(status === 'Exception' ? 'Pending' : status);
   return (
@@ -53,23 +62,34 @@ function MilestoneTracker({ status }) {
 
 function ConfirmStatusModal({ pending, saving, onConfirm, onCancel }) {
   if (!pending) return null;
+  const skipping = isSkippingStep(pending.from, pending.to);
+  const fromIdx  = MILESTONE_ORDER.indexOf(pending.from);
+  const toIdx    = MILESTONE_ORDER.indexOf(pending.to);
+  const required = skipping ? MILESTONE_ORDER[fromIdx + 1] : null;
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onCancel}>
       <div className="bg-card border border-app rounded-2xl w-full max-w-md shadow-2xl mx-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-3 px-6 py-4 border-b border-app">
-          <div className="w-9 h-9 rounded-full bg-yellow-500/15 flex items-center justify-center flex-shrink-0">
-            <AlertCircle size={18} className="text-yellow-400" />
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${skipping ? 'bg-red-500/15' : 'bg-yellow-500/15'}`}>
+            <AlertCircle size={18} className={skipping ? 'text-red-400' : 'text-yellow-400'} />
           </div>
           <div>
-            <p className="font-semibold text-app text-sm">Update shipment status?</p>
+            <p className="font-semibold text-app text-sm">{skipping ? 'Cannot skip status step' : 'Update shipment status?'}</p>
             <p className="text-xs text-gray-500 mt-0.5 font-mono">{pending.shipmentId}</p>
           </div>
         </div>
         <div className="px-6 py-5 space-y-4">
-          <p className="text-sm text-gray-400">
-            Are you sure you want to change the status for{' '}
-            <span className="text-app font-medium">{pending.route}</span>?
-          </p>
+          {skipping ? (
+            <div className="rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-3 text-xs text-red-400 space-y-1">
+              <p className="font-medium">Status steps must be followed in order.</p>
+              <p>You must set the status to <span className="font-semibold text-red-300">{required}</span> before moving to <span className="font-semibold text-red-300">{pending.to}</span>.</p>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400">
+              Are you sure you want to change the status for{' '}
+              <span className="text-app font-medium">{pending.route}</span>?
+            </p>
+          )}
           <div className="flex items-center justify-center gap-3">
             <span className={`text-xs px-2.5 py-1 rounded-full ${STATUS_STYLE[pending.from] ?? 'bg-gray-500/20 text-gray-400'}`}>{pending.from}</span>
             <span className="text-gray-600 text-xs">→</span>
@@ -79,12 +99,14 @@ function ConfirmStatusModal({ pending, saving, onConfirm, onCancel }) {
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-app">
           <button type="button" onClick={onCancel} disabled={saving}
             className="text-xs px-4 py-2 rounded-lg bg-hover border border-app text-secondary-app hover:opacity-80 transition cursor-pointer disabled:opacity-50">
-            Cancel
+            {skipping ? 'Close' : 'Cancel'}
           </button>
-          <button type="button" onClick={onConfirm} disabled={saving}
-            className="text-xs px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition cursor-pointer border-none disabled:opacity-50">
-            {saving ? 'Updating...' : 'Yes, update status'}
-          </button>
+          {!skipping && (
+            <button type="button" onClick={onConfirm} disabled={saving}
+              className="text-xs px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition cursor-pointer border-none disabled:opacity-50">
+              {saving ? 'Updating...' : 'Yes, update status'}
+            </button>
+          )}
         </div>
       </div>
     </div>,
@@ -150,6 +172,7 @@ function ShipmentsTable() {
   const [error, setError]         = useState(null);
   const [pending, setPending]     = useState(null);
   const [saving, setSaving]       = useState(false);
+  const [search, setSearch]       = useState('');
   const { show: showToast, node: toastNode } = useToast();
 
   const load = async () => {
@@ -160,6 +183,13 @@ function ShipmentsTable() {
 
   useEffect(() => { load(); }, []);
   usePolling(load);
+
+  // Refresh immediately when the window regains focus (e.g. switching back from Load Tenders)
+  useEffect(() => {
+    const onFocus = () => load();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, []);
 
   const requestStatusChange = (id, newStatus) => {
     const current = shipments.find(s => s._id === id);
@@ -174,7 +204,7 @@ function ShipmentsTable() {
       const updated = await api.put(`/shipments/${pending.id}/status`, { status: pending.to });
       setShipments(prev => prev.map(s => s._id === pending.id ? updated : s));
       setPending(null);
-      showToast(`Status updated to ${pending.to} — EDI 214 sent.`, 'success');
+      showToast(`Status updated to ${pending.to} — EDI 214 sent.${pending.to === 'Delivered' ? ' Invoice (210) generated.' : ''}`, 'success');
     } catch (err) {
       showToast(err.message, 'error');
     } finally { setSaving(false); }
@@ -196,17 +226,24 @@ function ShipmentsTable() {
               {shipments.filter(s => s.status === 'In Transit').length} in transit
             </span>
           </div>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search shipment ID..."
+            className="text-xs px-3 py-1.5 rounded-lg bg-input border border-app text-app placeholder-gray-600 focus:outline-none focus:border-blue-500 w-44"
+          />
         </div>
         <div className="overflow-auto flex-1">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-card>
+            <thead className="sticky top-0 bg-card">
               <tr className="text-gray-500 text-xs border-b border-app">
                 <th className="text-left px-5 py-2.5 font-medium">Shipment ID</th>
                 <th className="text-left px-5 py-2.5 font-medium">Date</th>
                 <th className="text-left px-5 py-2.5 font-medium">Route</th>
                 <th className="text-left px-5 py-2.5 font-medium">Milestone</th>
                 <th className="text-left px-5 py-2.5 font-medium">Status</th>
-                <th classNa.5 font-medium">EDI 214</th>
+                <th className="text-left px-5 py-2.5 font-medium">EDI 214 & 210</th>
                 <th className="text-right px-5 py-2.5 font-medium">Action</th>
               </tr>
             </thead>
@@ -214,7 +251,9 @@ function ShipmentsTable() {
               {shipments.length === 0 && (
                 <tr><td colSpan={7} className="text-center py-10 text-gray-600 text-sm">No shipments yet.</td></tr>
               )}
-              {shipments.map(s => (
+              {shipments.filter(s =>
+                !search.trim() || (s.shipmentId ?? '').toLowerCase().includes(search.trim().toLowerCase())
+              ).map(s => (
                 <tr key={s._id} className="border-b border-subtle hover:bg-hover transition">
                   <td className="px-5 py-3.5 font-mono text-xs text-gray-400">{s.shipmentId}</td>
                   <td className="px-5 py-3.5 text-xs text-gray-500">
@@ -223,16 +262,20 @@ function ShipmentsTable() {
                   <td className="px-5 py-3.5">
                     <p className="text-xs font-medium text-app">{s.route}</p>
                     <p className="text-xs text-gray-500">{s.partner?.name}</p>
-     /td>
+                  </td>
                   <td className="px-5 py-3.5"><MilestoneTracker status={s.status} /></td>
                   <td className="px-5 py-3.5">
                     <span className={`text-xs px-2 py-1 rounded-full ${STATUS_STYLE[s.status] ?? 'bg-gray-500/20 text-gray-400'}`}>{s.status}</span>
                   </td>
                   <td className="px-5 py-3.5">
                     {s.edi214Sent
-      ext-purple-400 font-medium w-fit">
-                          <CheckCircle2 size={10} /> 214 · {EDI_214_LABEL[s.status] ?? s.status}
-                        </span>
+                      ? s.status === 'Delivered'
+                        ? <span className="text-xs flex items-center gap-1 text-purple-400 font-medium w-fit">
+                            <CheckCircle2 size={10} /> 214 & 210
+                          </span>
+                        : <span className="text-xs flex items-center gap-1 text-purple-400 font-medium w-fit">
+                            <CheckCircle2 size={10} /> 214 · {EDI_214_LABEL[s.status] ?? s.status}
+                          </span>
                       : <span className="text-xs text-gray-600">—</span>}
                   </td>
                   <td className="px-5 py-3.5 text-right">
