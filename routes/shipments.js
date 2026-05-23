@@ -74,14 +74,16 @@ router.put('/:id/status', auth, async (req, res) => {
         payload:   JSON.stringify({ shipmentId: shipment.shipmentId, status }),
       }).save();
 
-      // Get destination city
+      // Get destination city and orderId from tender
       let location = '';
+      let tenderOrderId = null;
       if (shipment.tender) {
         const tender = await LoadTender.findById(shipment.tender);
         if (tender?.route) {
           const parts = tender.route.split('-');
           location = parts.length > 1 ? parts[parts.length - 1].trim() : tender.route.trim();
         }
+        if (tender?.orderId) tenderOrderId = tender.orderId;
       }
       if (!location && shipment.route) {
         const parts = shipment.route.split('-');
@@ -92,16 +94,21 @@ router.put('/:id/status', auth, async (req, res) => {
       const partner = await Partner.findById(shipment.partner);
       const partnerName = partner?.name?.toLowerCase().trim();
 
+      const mappedStatus = STATUS_MAP[status] || status.toUpperCase().replace(/ /g, '_');
+
       const payload214 = {
         shipmentId:  shipment.shipmentId,
-        status:      STATUS_MAP[status] || status.toUpperCase().replace(/ /g, '_'),
+        status:      mappedStatus,
         location,
         description: DESCRIPTION_MAP[status] || '',
       };
 
+      const SURPLUS_VENDOR_URL = 'https://landlady-snap-booting.ngrok-free.dev/api/edi/vendor/receive-214';
+
       const WEBHOOK_214 = {
         'surplus': [
           'https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-214',
+          SURPLUS_VENDOR_URL,
         ],
         'hiraya': [
           'https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/214',
@@ -109,20 +116,40 @@ router.put('/:id/status', auth, async (req, res) => {
         'bulldog exchange': [
           'https://landlady-snap-booting.ngrok-free.dev/api/edi/logistics/receive-214',
         ],
+        'newforge': [
+          'https://gilled-operable-jingle.ngrok-free.dev/api/edi/send-214',
+        ],
       };
 
       const dynamicUrl = partner?.endpoints?.edi214;
       console.log(`[214] partner: "${partnerName}" | dynamic edi214 url: "${dynamicUrl}"`);
-      const webhookUrls = dynamicUrl ? [dynamicUrl] : (WEBHOOK_214[partnerName] || []);
+      let webhookUrls = dynamicUrl ? [dynamicUrl] : (WEBHOOK_214[partnerName] || []);
+      // always include surplus vendor URL if not already present
+      if (partnerName === 'surplus' && !webhookUrls.includes(SURPLUS_VENDOR_URL)) {
+        webhookUrls = [...webhookUrls, SURPLUS_VENDOR_URL];
+      }
       console.log(`[214] will POST to:`, webhookUrls);
       for (const webhookUrl of webhookUrls) {
         try {
+          // vendor endpoint expects a different payload format
+          const body = webhookUrl === SURPLUS_VENDOR_URL
+            ? JSON.stringify({
+                transactionSetCode: '214',
+                orderId:            tenderOrderId || shipment.transactionId || shipment.shipmentId,
+                status:             mappedStatus,
+                location,
+                description:        DESCRIPTION_MAP[status] || '',
+                message:            `Shipment ${shipment.shipmentId} is now ${status}`,
+              })
+            : JSON.stringify(payload214);
+
           const r214 = await fetch(webhookUrl, {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify(payload214),
+            body,
           });
-          console.log(`214 POST to ${webhookUrl}: ${r214.status}`);
+          console.log(`[214] POST to ${webhookUrl}: ${r214.status}`);
+          console.log(`[214] payload sent:`, body);
         } catch (err214) {
           console.error(`214 POST to ${webhookUrl} failed:`, err214.message);
         }
@@ -191,9 +218,10 @@ router.put('/:id/status', auth, async (req, res) => {
         const pdfUrl = `${BASE_URL}/api/invoices/pdf/${pdfToken}`;
 
         const INVOICE_WEBHOOKS = {
-          'surplus':          'https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-invoice',
+          'surplus':          'https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-210',
           'hiraya':           'https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/receive/freight-invoice',
           'bulldog exchange': 'https://landlady-snap-booting.ngrok-free.dev/api/edi/logistics/receive-210',
+          'newforge':         'https://gilled-operable-jingle.ngrok-free.dev/api/edi/send-210',
         };
 
         const webhookUrl = partner?.endpoints?.invoice || INVOICE_WEBHOOKS[partnerName];
@@ -207,7 +235,6 @@ router.put('/:id/status', auth, async (req, res) => {
                 invoiceId,
                 totalAmount: amount,
                 status:      'Pending',
-                pdfUrl,
               }),
             });
             console.log(`210 auto-posted to ${partnerName}: ${invoiceId}`);

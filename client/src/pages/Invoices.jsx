@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FileText, Search, AlertTriangle, CheckCircle2, Clock, Send, Download } from 'lucide-react';
 import { api } from '../api';
 import { usePolling } from '../hooks/usePolling';
+import { useToast } from '../components/Toast';
 
 const STATUS_STYLE = {
   'Paid':    'bg-green-500/20 text-green-400',
@@ -15,6 +16,7 @@ function Invoices() {
   const [search, setSearch]     = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [loading, setLoading]   = useState(true);
+  const { show: showToast, node: toastNode } = useToast();
 
   const load = () =>
     api.get('/invoices')
@@ -28,6 +30,7 @@ function Invoices() {
     try {
       const updated = await api.post(`/invoices/${id}/send210`, {});
       setInvoices(prev => prev.map(i => i._id === id ? updated : i));
+      showToast('997 receipt sent successfully.', 'success');
     } catch (err) { alert(err.message); }
   };
 
@@ -66,6 +69,7 @@ function Invoices() {
 
   return (
     <div className="space-y-4 flex flex-col h-full">
+      {toastNode}
 
       {/* Stat cards */}
       <div className="grid grid-cols-3 gap-4 shrink-0">
@@ -157,7 +161,7 @@ function Invoices() {
                       {inv.status === 'Paid' && (
                         <button onClick={() => send210(inv._id)}
                           className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition cursor-pointer bg-transparent border-none">
-                          <Send size={11} /> {inv.ediSent ? 'Send 997 Again' : 'Send 997 Receipt'}
+                          <Send size={11} /> {inv.ediSent ? 'Send 997' : 'Send 997 Receipt'}
                         </button>
                       )}
                     </div>

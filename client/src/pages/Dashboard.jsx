@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Truck, FileText, Inbox,
@@ -20,6 +20,7 @@ import { api } from '../api';
 import { usePolling } from '../hooks/usePolling';
 import ShipmentsChart from '../components/ShipmentsChart';
 import InvoiceAnalytics from '../components/InvoiceAnalytics';
+import { useToast } from '../components/Toast';
 
 const navSections = [
   {
@@ -29,7 +30,7 @@ const navSections = [
       { icon: Inbox,           label: 'Load Tenders' },
       { icon: Truck,           label: 'Shipments' },
       { icon: FileText,        label: 'Invoices' },
-      { icon: Calculator,      label: 'Freight Rates' },
+      { icon: Calculator,      label: 'Price Checker' },
       { icon: Wallet,          label: 'Ledger' },
     ],
   },
@@ -62,7 +63,7 @@ const SLUG_TO_LABEL = {
   'load-tenders':   'Load Tenders',
   'shipments':      'Shipments',
   'invoices':       'Invoices',
-  'freight-rates':  'Freight Rates',
+  'freight-rates':  'Price Checker',
   'ledger':         'Ledger',
   'transmissions':  'Transmissions',
   'partners':       'Partners',
@@ -75,6 +76,8 @@ function Dashboard({ user, onLogout }) {
   const { setTheme, isDark } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  const { show: showToast, node: toastNode } = useToast();
+  const prevTenderCountRef = useRef(null);
 
   // derive active nav from URL
   const slug = location.pathname.replace(/^\/dashboard\/?/, '');
@@ -116,6 +119,12 @@ function Dashboard({ user, onLogout }) {
       setAllShipments(shipments);
       setRecentEdi(transmissions.slice(0, 5));
       setAllInvoices(invoices);
+      // global 204 toast — fires on any page
+      if (prevTenderCountRef.current !== null && tenders.length > prevTenderCountRef.current) {
+        const diff = tenders.length - prevTenderCountRef.current;
+        showToast(`${diff} new EDI 204 load tender${diff > 1 ? 's' : ''} received.`, 'info');
+      }
+      prevTenderCountRef.current = tenders.length;
     }).catch(() => {});
   };
 
@@ -141,20 +150,21 @@ function Dashboard({ user, onLogout }) {
 
   return (
     <div className="flex h-screen w-screen bg-app text-app overflow-hidden">
+      {toastNode}
 
       {/* Sidebar */}
-      <aside className="w-60 min-w-[240px] bg-card flex flex-col border-r border-app">
+      <aside className="group/sidebar relative z-20 flex-shrink-0 w-14 hover:w-60 transition-all duration-150 ease-out bg-card flex flex-col border-r border-app overflow-hidden">
 
-        {/* Brand — avatar + user */}
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-app">
-          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-lg font-bold uppercase text-white flex-shrink-0">
-            {user?.[0] ?? 'U'}
-          </div>
-          <p className="text-sm font-semibold text-app capitalize tracking-wide">{user}</p>
+        {/* Brand — logo */}
+        <div className="flex items-center border-b border-app overflow-hidden h-[72px] flex-shrink-0 px-2">
+          <img src={logo} alt="CarGO Logo" className="h-10 w-10 object-contain flex-shrink-0" />
+          <span className="whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-150 text-xs font-bold tracking-widest text-app ml-2">
+            CARGO LOGISTICS
+          </span>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+        <nav className="flex-1 overflow-y-auto px-1.5 py-4 space-y-1">
           {navWithCounts.map(({ title, items }, sectionIdx) => (
             <div key={title}>
               {sectionIdx > 0 && <div className="border-t border-app my-2" />}
@@ -163,16 +173,21 @@ function Dashboard({ user, onLogout }) {
                   <li key={label}>
                     <button
                       onClick={() => setActiveNav(label)}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition cursor-pointer border-none
+                      title={label}
+                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition cursor-pointer border-none
                         ${activeNav === label ? 'bg-blue-600 text-white font-medium' : 'text-secondary-app hover:bg-hover hover:text-app'}`}
                     >
-                      <span className="flex items-center gap-2.5">
-                        <Icon size={15} />
-                        {label}
+                      <span className="flex items-center gap-2.5 min-w-0">
+                        <Icon size={15} className="flex-shrink-0" />
+                        <span className="whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 overflow-hidden">
+                          {label}
+                        </span>
                       </span>
-                      {badge       && <span className="text-[11px] bg-white/15 px-1.5 py-0.5 rounded">{badge}</span>}
-                      {badgeRed    && <span className="text-[11px] bg-red-500 px-1.5 py-0.5 rounded">{badgeRed}</span>}
-                      {badgeYellow && <span className="text-[11px] bg-yellow-500 text-black px-1.5 py-0.5 rounded font-semibold">{badgeYellow}</span>}
+                      <span className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 flex-shrink-0">
+                        {badge       && <span className="text-[11px] bg-white/15 px-1.5 py-0.5 rounded">{badge}</span>}
+                        {badgeRed    && <span className="text-[11px] bg-red-500 px-1.5 py-0.5 rounded">{badgeRed}</span>}
+                        {badgeYellow && <span className="text-[11px] bg-yellow-500 text-black px-1.5 py-0.5 rounded font-semibold">{badgeYellow}</span>}
+                      </span>
                     </button>
                   </li>
                 ))}
@@ -182,8 +197,10 @@ function Dashboard({ user, onLogout }) {
         </nav>
 
         {/* Footer */}
-        <div className="px-4 py-3 border-t border-app text-center">
-          <p className="text-[10px] text-gray-600">© 2026 CarGO Logistics Services</p>
+        <div className="px-2 py-3 border-t border-app text-center overflow-hidden">
+          <p className="text-[10px] text-gray-600 whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
+            © 2026 CarGO Logistics Services
+          </p>
         </div>
       </aside>
 
@@ -191,17 +208,28 @@ function Dashboard({ user, onLogout }) {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Topbar */}
-        <header className="flex items-center px-5 py-3 border-b border-app bg-card min-h-[52px] gap-3">
-          <img src={logo} alt="CarGO Logo" className="h-8 w-auto object-contain" />
-          <span className="text-base font-semibold text-app">{activeNav}</span>
+        <header className="flex items-center px-5 border-b border-app bg-card h-[72px] flex-shrink-0 gap-4">
+          <div className="flex flex-col">
+            <span className="text-lg font-bold text-app leading-tight tracking-tight">{activeNav}</span>
+          </div>
+          <div className="flex-1" />
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-sm font-semibold text-app capitalize leading-none">{user}</p>
+              <p className="text-xs text-gray-500 mt-0.5">Administrator</p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-lg font-bold uppercase text-white flex-shrink-0">
+              {user?.[0] ?? 'U'}
+            </div>
+          </div>
         </header>
 
         {/* Content */}
-        <main className={`flex-1 overflow-hidden ${activeNav === 'Load Tenders' || activeNav === 'Freight Rates' ? 'flex flex-col p-6' : 'overflow-y-auto p-6 space-y-5'}`}>
+        <main className={`flex-1 overflow-hidden ${activeNav === 'Load Tenders' || activeNav === 'Price Checker' ? 'flex flex-col p-6' : 'overflow-y-auto p-6 space-y-5'}`}>
           {activeNav === 'Load Tenders'  && <LoadTenders />}
           {activeNav === 'Shipments'     && <ShipmentsTable key="shipments" />}
           {activeNav === 'Invoices'      && <Invoices />}
-          {activeNav === 'Freight Rates' && <FreightRates />}
+          {activeNav === 'Price Checker' && <FreightRates />}
           {activeNav === 'Ledger'        && <Ledger />}
           {activeNav === 'Transmissions' && <Transmissions />}
           {activeNav === 'Partners'      && <Partners />}

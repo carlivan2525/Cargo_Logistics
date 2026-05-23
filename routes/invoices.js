@@ -220,7 +220,7 @@ router.post('/:id/send210', auth, async (req, res) => {
     invoice.edi997Sent = true;
     await invoice.save();
 
-    // POST 210 to partner's API with pdfUrl
+    // POST 997 to partner's API with pdfUrl
     try {
       const partner = await Partner.findById(invoice.partner._id);
       const partnerName = partner?.name?.toLowerCase().trim();
@@ -228,6 +228,7 @@ router.post('/:id/send210', auth, async (req, res) => {
       const RECEIPT_WEBHOOKS = {
         'hiraya':           'https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/freight-invoice/receipt',
         'bulldog exchange': 'https://landlady-snap-booting.ngrok-free.dev/api/edi/logistics/receive-receipt',
+        'newforge':         'https://gilled-operable-jingle.ngrok-free.dev/api/edi/receive-997',
       };
 
       const endpoint = partner?.endpoints?.edi210 || RECEIPT_WEBHOOKS[partnerName] || partner?.apiEndpoint;
@@ -241,10 +242,10 @@ router.post('/:id/send210', auth, async (req, res) => {
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify(payload),
         });
-        console.log('210 POST response:', response.status);
+        console.log('997 POST response:', response.status);
       }
     } catch (webhookErr) {
-      console.error('210 POST failed:', webhookErr.message);
+      console.error('997 POST failed:', webhookErr.message);
     }
 
     res.json(invoice);

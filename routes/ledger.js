@@ -18,7 +18,7 @@ router.get('/', auth, async (req, res) => {
 // POST withdrawal
 router.post('/withdraw', auth, async (req, res) => {
   try {
-    const { amount } = req.body;
+    const { amount, paymentMethod } = req.body;
     if (!amount || amount <= 0) return res.status(400).json({ message: 'Invalid amount' });
 
     const last = await Ledger.findOne().sort({ createdAt: -1 });
@@ -26,10 +26,11 @@ router.post('/withdraw', auth, async (req, res) => {
     if (amount > currentBalance) return res.status(400).json({ message: 'Insufficient balance' });
 
     const entry = await Ledger.create({
-      type:        'withdrawal',
+      type:          'withdrawal',
       amount,
-      description: 'Manual withdrawal',
-      balance:     currentBalance - amount,
+      description:   'Manual withdrawal',
+      balance:       currentBalance - amount,
+      paymentMethod: paymentMethod || null,
     });
     res.json(entry);
   } catch (err) { res.status(500).json({ message: err.message }); }

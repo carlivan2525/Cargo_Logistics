@@ -20,8 +20,8 @@ function Transmissions() {
   const [filterStatus, setFilterStatus]   = useState('All');
   const [loading, setLoading]             = useState(true);
 
-  const load = async (p = 1) => {
-    setLoading(true);
+  const load = async (p = 1, silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await api.get(`/transmissions?page=${p}`);
       setData(res.data);
@@ -31,12 +31,12 @@ function Transmissions() {
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => { load(1); }, []);
-  usePolling(() => load(page));
+  usePolling(() => load(page, true));
 
   const filtered = data.filter(t => {
     const matchSearch =
