@@ -93,7 +93,7 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
   const [tender, setTender] = useState(initialTender);
   const [detailLoading, setDetailLoading] = useState(true);
   const [vehicle, setVehicle] = useState(initialTender.assignedVehicle?._id ?? null);
-  const [loading, setLoading] = useState(false);
+  const [loadingAction, setLoadingAction] = useState(null); // 'Accepted' | 'Rejected' | null
 
   useEffect(() => {
     let cancelled = false;
@@ -121,9 +121,9 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
 
   const handleRespond = async (status) => {
     if (status === 'Accepted' && !canAccept) return;
-    setLoading(true);
+    setLoadingAction(status);
     await onRespond(tender._id, status, vehicle);
-    setLoading(false);
+    setLoadingAction(null);
   };
 
   const fmt = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
@@ -236,20 +236,26 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
             <>
               <button
                 type="button"
-                disabled={loading}
+                disabled={loadingAction !== null}
                 onClick={() => handleRespond('Rejected')}
                 className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition cursor-pointer font-medium disabled:opacity-50"
               >
-                <XCircle size={12} /> Send 990 — Rejected
+                {loadingAction === 'Rejected'
+                  ? <span className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin" />
+                  : <XCircle size={12} />}
+                {loadingAction === 'Rejected' ? 'Sending…' : 'Send 990 — Rejected'}
               </button>
               <button
                 type="button"
-                disabled={!canAccept || loading}
+                disabled={!canAccept || loadingAction !== null}
                 onClick={() => handleRespond('Accepted')}
                 className={`flex items-center gap-1.5 text-xs px-4 py-2 rounded-lg font-medium transition cursor-pointer border-none
-                  ${canAccept && !loading ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-input text-gray-600 cursor-not-allowed'}`}
+                  ${canAccept && !loadingAction ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-input text-gray-600 cursor-not-allowed'}`}
               >
-                <CheckCircle2 size={12} /> Send 990 — Accepted
+                {loadingAction === 'Accepted'
+                  ? <span className="w-3 h-3 border border-white/40 border-t-transparent rounded-full animate-spin" />
+                  : <CheckCircle2 size={12} />}
+                {loadingAction === 'Accepted' ? 'Sending…' : 'Send 990 — Accepted'}
               </button>
             </>
           ) : (

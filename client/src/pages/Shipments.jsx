@@ -103,8 +103,9 @@ function ConfirmStatusModal({ pending, saving, onConfirm, onCancel }) {
           </button>
           {!skipping && (
             <button type="button" onClick={onConfirm} disabled={saving}
-              className="text-xs px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition cursor-pointer border-none disabled:opacity-50">
-              {saving ? 'Updating...' : 'Yes, update status'}
+              className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition cursor-pointer border-none disabled:opacity-50">
+              {saving && <span className="w-3 h-3 border border-white/40 border-t-transparent rounded-full animate-spin" />}
+              {saving ? 'Updating…' : 'Yes, update status'}
             </button>
           )}
         </div>

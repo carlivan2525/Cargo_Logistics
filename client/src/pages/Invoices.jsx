@@ -16,6 +16,7 @@ function Invoices() {
   const [search, setSearch]     = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [loading, setLoading]   = useState(true);
+  const [sending, setSending]   = useState(new Set());
   const { show: showToast, node: toastNode } = useToast();
 
   const load = () =>
@@ -27,11 +28,17 @@ function Invoices() {
   usePolling(load);
 
   const send210 = async (id) => {
+    if (sending.has(id)) return;
+    setSending(prev => new Set(prev).add(id));
     try {
       const updated = await api.post(`/invoices/${id}/send210`, {});
       setInvoices(prev => prev.map(i => i._id === id ? updated : i));
       showToast('997 receipt sent successfully.', 'success');
-    } catch (err) { alert(err.message); }
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setSending(prev => { const s = new Set(prev); s.delete(id); return s; });
+    }
   };
 
   const downloadPdf = (inv) => {
@@ -159,9 +166,14 @@ function Invoices() {
                         </button>
                       )}
                       {inv.status === 'Paid' && (
-                        <button onClick={() => send210(inv._id)}
-                          className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition cursor-pointer bg-transparent border-none">
-                          <Send size={11} /> {inv.ediSent ? 'Send 997' : 'Send 997 Receipt'}
+                        <button
+                          onClick={() => send210(inv._id)}
+                          disabled={sending.has(inv._id)}
+                          className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition cursor-pointer bg-transparent border-none disabled:opacity-50 disabled:cursor-not-allowed">
+                          {sending.has(inv._id)
+                            ? <><span className="w-2.5 h-2.5 border border-purple-400 border-t-transparent rounded-full animate-spin" /> Sending…</>
+                            : <><Send size={11} /> {inv.edi997Sent ? 'Resend (997)' : 'Send Receipt (997)'}</>
+                          }
                         </button>
                       )}
                     </div>
