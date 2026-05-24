@@ -13,6 +13,7 @@ function WithdrawModal({ balance, onConfirm, onCancel }) {
   const [cardName, setCardName] = useState('');
   const [cardExp, setCardExp]   = useState('');
   const [error, setError]       = useState('');
+  const [confirming, setConfirming] = useState(false);
 
   const handleNext = () => {
     const val = parseFloat(amount);
@@ -30,7 +31,10 @@ function WithdrawModal({ balance, onConfirm, onCancel }) {
       if (!cardName.trim()) return setError('Enter the cardholder name.');
       if (!/^\d{2}\/\d{2}$/.test(cardExp)) return setError('Enter expiry as MM/YY.');
     }
-    onConfirm(parseFloat(amount), method);
+    setConfirming(true);
+    setTimeout(() => {
+      onConfirm(parseFloat(amount), method);
+    }, 3000);
   };
 
   const formatCard = val => {
@@ -172,8 +176,10 @@ function WithdrawModal({ balance, onConfirm, onCancel }) {
             {step === 1 ? 'Cancel' : 'Back'}
           </button>
           <button type="button" onClick={step === 1 ? handleNext : handleConfirm}
-            className="text-xs px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-medium transition cursor-pointer border-none">
-            {step === 1 ? 'Next' : 'Confirm Withdrawal'}
+            disabled={confirming}
+            className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-medium transition cursor-pointer border-none disabled:opacity-70">
+            {confirming && <span className="w-3 h-3 border border-white/40 border-t-transparent rounded-full animate-spin" />}
+            {step === 1 ? 'Next' : confirming ? 'Processing…' : 'Confirm Withdrawal'}
           </button>
         </div>
       </div>

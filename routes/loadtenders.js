@@ -78,7 +78,8 @@ router.post('/', (req, res, next) => {
       weight: weight || '',
       commodity: commodity || '',
       status: 'Pending',
-      rawEdi: rawEdi || null,
+      rawEdi:  rawEdi || null,
+      rawJson: rawEdi ? null : req.body, // store original JSON payload if not X12
     });
     await tender.save();
 
@@ -109,11 +110,10 @@ router.get('/:id', auth, async (req, res) => {
     res.json(tender);
   } catch { res.status(500).json({ message: 'Server error' }); }
 });
-
 // POST respond — send 990
 router.post('/:id/respond', auth, async (req, res) => {
   try {
-    const { status, vehicleId } = req.body; // status: 'Accepted' | 'Rejected'
+    const { status, vehicleId, notes } = req.body; // status: 'Accepted' | 'Rejected'
     const tender = await LoadTender.findById(req.params.id);
     if (!tender) return res.status(404).json({ message: 'Tender not found' });
     if (tender.status !== 'Pending') return res.status(400).json({ message: 'Already responded' });
@@ -159,6 +159,7 @@ router.post('/:id/respond', auth, async (req, res) => {
       }
     } else if (status === 'Rejected') {
       tender.status = status;
+      if (notes) tender.rejectNotes = notes;
     } else {
       return res.status(400).json({ message: 'Invalid status' });
     }
@@ -175,17 +176,32 @@ router.post('/:id/respond', auth, async (req, res) => {
       partner:   tender.partner,
       status:    'Sent',
       isaSegment: `ISA*00*...*ZZ*CARGO*${new Date().toISOString().slice(0,10).replace(/-/g,'')}*^*00501*${trx990.replace('TRX-', '').padStart(9, '0')}*0*P*>`,
-      payload:   JSON.stringify({ tenderRef: tender.tenderId, response: status }),
+      payload:   JSON.stringify({ tenderRef: tender.tenderId, response: status, ...(notes ? { notes } : {}) }),
     }).save();
 
     // POST 990 acknowledgement to partner's system
     const partner = await require('../models/Partner').findById(tender.partner);
     const partnerName = partner?.name?.toLowerCase().trim();
-    const edi990Payload = { shipmentId: tender.shipmentId, status: status.toUpperCase() };
+    const vehicle990 = status === 'Accepted' ? await require('../models/Vehicle').findById(vehicleId) : null;
+
+    const edi990Payload = {
+      orderId: tender.orderId || tender.shipmentId,
+      shipmentId: tender.shipmentId,
+      status:  status.toUpperCase(),
+      ...(status === 'Accepted' && vehicle990 ? {
+        assignedVehicle: {
+          vehicleId: vehicle990.vehicleId || '',
+          name:      vehicle990.name      || '',
+          type:      vehicle990.type      || '',
+          plate:     vehicle990.plate     || '',
+        },
+      } : {}),
+      ...(notes ? { notes } : {}),
+    };
 
     if (partnerName === 'surplus') {
       try {
-        await fetch('https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-990', {
+        await fetch('https://patchy-rework-silver.ngrok-free.dev/api/edi/customer/receive-990', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(edi990Payload),
         });
@@ -194,15 +210,9 @@ router.post('/:id/respond', auth, async (req, res) => {
 
     if (partnerName === 'hiraya') {
       try {
-        const vehicle = await require('../models/Vehicle').findById(vehicleId);
         await fetch('https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/cargo/webhook', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderId:         tender.orderId || '',
-            shipmentId:      tender.shipmentId || '',
-            status:          status.toUpperCase(),
-            assignedVehicle: vehicle?.plate || vehicle?.name || '',
-          }),
+          body: JSON.stringify(edi990Payload),
         });
       } catch (e) { console.error('990 Hiraya failed:', e.message); }
     }

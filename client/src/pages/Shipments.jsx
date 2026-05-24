@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Truck, CheckCircle2, Clock, Package, ChevronDown, AlertCircle } from 'lucide-react';
+import { Truck, CheckCircle2, Clock, Package, ChevronDown, AlertCircle, Copy, ClipboardCheck, FileCode } from 'lucide-react';
 import { api } from '../api';
 import { useToast } from '../components/Toast';
 import { usePolling } from '../hooks/usePolling';
@@ -14,6 +14,54 @@ const STATUS_STYLE = {
   'Delivered':  'bg-green-500/20 text-green-400',
   'Exception':  'bg-red-500/20 text-red-400',
 };
+
+const STATUS_MAP = { 'Pickup': 'PICKUP', 'In Transit': 'IN_TRANSIT', 'Delivered': 'DELIVERED' };
+const DESC_MAP   = {
+  'Pickup':     'Cargo has been picked up from the origin.',
+  'In Transit': 'Cargo departed the central warehouse terminal.',
+  'Delivered':  'Cargo has been delivered to the destination.',
+};
+
+function generateX12_214(s) {
+  const pad     = (v, n) => String(v ?? '').padEnd(n).slice(0, n);
+  const today   = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const time    = new Date().toTimeString().slice(0,5).replace(':','');
+  const isaId   = (s.partner?.isaId ?? s.partner?.name ?? 'PARTNER').toUpperCase().replace(/\s+/g,'').slice(0,15);
+  const ctrlNum = (s.shipmentId ?? 'SHP-000001').replace(/[^0-9]/g,'').slice(-9).padStart(9,'0');
+  const routeParts = (s.route || '').split('-');
+  const location   = routeParts.length > 1 ? routeParts[routeParts.length - 1].trim() : s.route || '';
+  const mappedStatus = STATUS_MAP[s.status] ?? s.status?.toUpperCase().replace(/ /g,'_') ?? 'UNKNOWN';
+  const desc = DESC_MAP[s.status] ?? '';
+
+  const segments = [
+    `ISA*00*${pad('',10)}*00*${pad('',10)}*ZZ*${pad('CARGO',15)}*ZZ*${pad(isaId,15)}*${today.slice(2)}*${time}*^*00501*${ctrlNum}*0*P*>`,
+    `GS*QM*CARGO*${isaId}*${today}*${time}*1*X*005010`,
+    `ST*214*0001`,
+    `B10*${s.shipmentId ?? ''}**CRGO`,
+    `L11*${s.shipmentId ?? ''}*BM`,
+    `N1*SH*CarGO Logistics Services*ZZ*CARGO`,
+    `N1*CN*${isaId}*ZZ*${isaId}`,
+    `AT7*${mappedStatus}*NS**${today}*${time}*LT`,
+    location ? `MS2*CRGO*${location}` : null,
+    desc     ? `NTE*OTH*${desc}`      : null,
+    `SE*${desc ? (location ? 10 : 9) : (location ? 9 : 8)}*0001`,
+    `GE*1*1`,
+    `IEA*1*${ctrlNum}`,
+  ].filter(Boolean);
+
+  return segments.join('~\n') + '~';
+}
+
+function getJson214(s) {
+  const routeParts = (s.route || '').split('-');
+  const location   = routeParts.length > 1 ? routeParts[routeParts.length - 1].trim() : s.route || '';
+  return {
+    shipmentId:  s.shipmentId,
+    status:      STATUS_MAP[s.status] ?? s.status,
+    location,
+    description: DESC_MAP[s.status] ?? '',
+  };
+}
 
 const EDI_214_LABEL = { 'Pickup': 'Pickup', 'In Transit': 'In Transit', 'Delivered': 'Delivered' };
 
@@ -34,19 +82,25 @@ function isSkippingStep(from, to) {
   return toIdx - fromIdx > 1;
 }
 
-function MilestoneTracker({ status }) {
+function MilestoneTracker({ status, onViewEdi }) {
   const currentIdx = MILESTONE_ORDER.indexOf(status === 'Exception' ? 'Pending' : status);
+  const ediStatuses = ['Pickup', 'In Transit', 'Delivered'];
   return (
     <div className="flex items-center gap-1">
       {MILESTONES.map(({ key, icon: Icon, label }, i) => {
         const done    = i <= currentIdx;
         const current = i === currentIdx;
+        const hasEdi  = done && ediStatuses.includes(key);
         return (
           <div key={key} className="flex items-center gap-1">
-            <div className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-full transition
-              ${current ? 'bg-blue-600 text-white font-semibold'
-              : done    ? 'bg-green-500/20 text-green-400'
-                        : 'bg-input text-gray-600'}`}>
+            <div
+              onClick={() => hasEdi && onViewEdi && onViewEdi(key)}
+              title={hasEdi ? `View EDI 214 — ${key}` : undefined}
+              className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-full transition
+                ${current ? 'bg-blue-600 text-white font-semibold'
+                : done    ? 'bg-green-500/20 text-green-400'
+                          : 'bg-input text-gray-600'}
+                ${hasEdi ? 'cursor-pointer hover:ring-1 hover:ring-green-400/40' : ''}`}>
               <Icon size={10} />
               <span className="hidden lg:inline">{label}</span>
             </div>
@@ -174,6 +228,9 @@ function ShipmentsTable() {
   const [pending, setPending]     = useState(null);
   const [saving, setSaving]       = useState(false);
   const [search, setSearch]       = useState('');
+  const [x12Shipment, setX12Shipment] = useState(null);
+  const [viewMode, setViewMode]       = useState('x12');
+  const [copied, setCopied]           = useState(false);
   const { show: showToast, node: toastNode } = useToast();
 
   const load = async () => {
@@ -204,11 +261,20 @@ function ShipmentsTable() {
     try {
       const updated = await api.put(`/shipments/${pending.id}/status`, { status: pending.to });
       setShipments(prev => prev.map(s => s._id === pending.id ? updated : s));
+      setX12Shipment(prev => prev?._id === pending.id ? updated : prev);
       setPending(null);
-      showToast(`Status updated to ${pending.to} — EDI 214 sent.${pending.to === 'Delivered' ? ' Invoice (210) generated.' : ''}`, 'success');
+      showToast(`Status updated to ${pending.to} — EDI 214 sent.`, 'success');
     } catch (err) {
       showToast(err.message, 'error');
     } finally { setSaving(false); }
+  };
+
+  const copyContent = (s) => {
+    const text = viewMode === 'x12' ? generateX12_214(s) : JSON.stringify(getJson214(s), null, 2);
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
 
   if (loading) return <div className="text-gray-500 text-sm py-10 text-center">Loading...</div>;
@@ -244,7 +310,7 @@ function ShipmentsTable() {
                 <th className="text-left px-5 py-2.5 font-medium">Route</th>
                 <th className="text-left px-5 py-2.5 font-medium">Milestone</th>
                 <th className="text-left px-5 py-2.5 font-medium">Status</th>
-                <th className="text-left px-5 py-2.5 font-medium">EDI 214 & 210</th>
+                <th className="text-left px-5 py-2.5 font-medium">EDI 214</th>
                 <th className="text-right px-5 py-2.5 font-medium">Action</th>
               </tr>
             </thead>
@@ -264,7 +330,11 @@ function ShipmentsTable() {
                     <p className="text-xs font-medium text-app">{s.route}</p>
                     <p className="text-xs text-gray-500">{s.partner?.name}</p>
                   </td>
-                  <td className="px-5 py-3.5"><MilestoneTracker status={s.status} /></td>
+                  <td className="px-5 py-3.5"><MilestoneTracker status={s.status} onViewEdi={(milestoneStatus) => {
+                    setViewMode('x12');
+                    setCopied(false);
+                    setX12Shipment({ ...s, status: milestoneStatus });
+                  }} /></td>
                   <td className="px-5 py-3.5">
                     <span className={`text-xs px-2 py-1 rounded-full ${STATUS_STYLE[s.status] ?? 'bg-gray-500/20 text-gray-400'}`}>{s.status}</span>
                   </td>
@@ -272,7 +342,7 @@ function ShipmentsTable() {
                     {s.edi214Sent
                       ? s.status === 'Delivered'
                         ? <span className="text-xs flex items-center gap-1 text-purple-400 font-medium w-fit">
-                            <CheckCircle2 size={10} /> 214 & 210
+                            <CheckCircle2 size={10} /> 214 · {EDI_214_LABEL[s.status] ?? s.status}
                           </span>
                         : <span className="text-xs flex items-center gap-1 text-purple-400 font-medium w-fit">
                             <CheckCircle2 size={10} /> 214 · {EDI_214_LABEL[s.status] ?? s.status}
@@ -288,6 +358,54 @@ function ShipmentsTable() {
           </table>
         </div>
       </div>
+
+      {/* EDI 214 Viewer Modal */}
+      {x12Shipment && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-card border border-app rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-app shrink-0 gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded shrink-0">EDI 214</span>
+                <span className="text-sm font-semibold text-app shrink-0">Shipment Status</span>
+                <span className="text-xs font-mono text-gray-500 truncate">{x12Shipment.shipmentId}</span>
+                <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${STATUS_STYLE[x12Shipment.status] ?? 'bg-gray-500/20 text-gray-400'}`}>{x12Shipment.status}</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center bg-input border border-app rounded-lg overflow-hidden text-xs">
+                  <button type="button" onClick={() => setViewMode('json')}
+                    className={`px-3 py-1.5 transition cursor-pointer border-none ${viewMode === 'json' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-app'}`}>
+                    JSON
+                  </button>
+                  <button type="button" onClick={() => setViewMode('x12')}
+                    className={`px-3 py-1.5 transition cursor-pointer border-none ${viewMode === 'x12' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-app'}`}>
+                    ANSI X12
+                  </button>
+                </div>
+                <button type="button" onClick={() => copyContent(x12Shipment)}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-input border border-app hover:bg-hover transition cursor-pointer text-gray-400 hover:text-app">
+                  {copied
+                    ? <><ClipboardCheck size={12} className="text-green-400" /><span className="text-green-400">Copied!</span></>
+                    : <><Copy size={12} /> Copy</>}
+                </button>
+                <button type="button" onClick={() => setX12Shipment(null)}
+                  className="text-muted-app hover:text-app transition cursor-pointer bg-transparent border-none text-lg leading-none">×</button>
+              </div>
+            </div>
+            <div className="overflow-y-auto flex-1 p-4">
+              {viewMode === 'x12' ? (
+                <pre className="text-xs text-green-400 font-mono bg-black/40 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
+                  {generateX12_214(x12Shipment)}
+                </pre>
+              ) : (
+                <pre className="text-xs text-yellow-300 font-mono bg-black/40 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
+                  {JSON.stringify(getJson214(x12Shipment), null, 2)}
+                </pre>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </>
   );
 }

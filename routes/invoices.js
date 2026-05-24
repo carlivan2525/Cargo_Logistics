@@ -125,7 +125,7 @@ router.post('/', auth, async (req, res) => {
 // POST webhook — partner notifies CarGO that invoice is paid
 router.post('/webhook/paid', async (req, res) => {
   try {
-    const { invoiceNumber, shipmentId } = req.body;
+    const { invoiceNumber, shipmentId, status } = req.body;
 
     let invoice = invoiceNumber
       ? await Invoice.findOne({ invoiceId: invoiceNumber }).populate('partner', 'name').populate('shipment', 'shipmentId')

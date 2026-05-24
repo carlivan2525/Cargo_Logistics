@@ -27,7 +27,9 @@ const loadTenderSchema = new mongoose.Schema({
   freightRate:     { type: Number, default: 0 },
   status:          { type: String, enum: ['Pending', 'Accepted', 'Rejected'], default: 'Pending' },
   assignedVehicle: { type: mongoose.Schema.Types.ObjectId, ref: 'Vehicle', default: null },
+  rejectNotes:     { type: String, default: '' },
   rawEdi:          { type: String },
+  rawJson:         { type: mongoose.Schema.Types.Mixed },
 }, { timestamps: true });
 
 module.exports = mongoose.model('LoadTender', loadTenderSchema);

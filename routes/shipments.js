@@ -104,6 +104,7 @@ router.put('/:id/status', auth, async (req, res) => {
       };
 
       const SURPLUS_VENDOR_URL = 'https://landlady-snap-booting.ngrok-free.dev/api/edi/vendor/receive-214';
+      const HIRAYA_VENDOR_URL  = 'https://rejoicing-exposable-destitute.ngrok-free.dev/api/edi/receive-214';
 
       const WEBHOOK_214 = {
         'surplus': [
@@ -112,6 +113,7 @@ router.put('/:id/status', auth, async (req, res) => {
         ],
         'hiraya': [
           'https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/214',
+          HIRAYA_VENDOR_URL,
         ],
         'bulldog exchange': [
           'https://landlady-snap-booting.ngrok-free.dev/api/edi/logistics/receive-214',
@@ -140,6 +142,13 @@ router.put('/:id/status', auth, async (req, res) => {
                 location,
                 description:        DESCRIPTION_MAP[status] || '',
                 message:            `Shipment ${shipment.shipmentId} is now ${status}`,
+              })
+            : webhookUrl === HIRAYA_VENDOR_URL
+            ? JSON.stringify({
+                orderId:     tenderOrderId || shipment.transactionId || shipment.shipmentId,
+                status:      mappedStatus,
+                location,
+                description: DESCRIPTION_MAP[status] || '',
               })
             : JSON.stringify(payload214);
 
