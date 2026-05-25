@@ -20,6 +20,16 @@ const STATUS_STYLE = {
 
 const dash = (v) => (v && String(v).trim() ? v : '—');
 
+// Format raw weight — everything is kg
+function formatWeight(value) {
+  if (value == null || value === '') return '—';
+  const s = String(value).trim();
+  if (/^[\d.]+\s*kg$/i.test(s)) return s; // already has kg
+  const n = parseFloat(s);
+  if (isNaN(n)) return s;
+  return `${n} kg`;
+}
+
 function DetailField({ label, value }) {
   return (
     <div>
@@ -402,7 +412,7 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
 
           <Section title="Load">
             <div className="grid grid-cols-2 gap-3">
-              <DetailField label="Weight" value={tender.weight} />
+              <DetailField label="Weight" value={formatWeight(tender.weight)} />
               <DetailField label="Commodity" value={tender.commodity} />
             </div>
           </Section>
@@ -637,7 +647,10 @@ function LoadTenders() {
         api.get('/vehicles'),
       ]);
       setTenders(t);
-      setVehicles(v);
+      setVehicles([...v].sort((a, b) => {
+        const kg = s => parseFloat(String(s || '0').replace(/[^0-9.]/g, '')) || 0;
+        return kg(a.capacity) - kg(b.capacity);
+      }));
     } catch (err) {
       setError(err.message);
     } finally {

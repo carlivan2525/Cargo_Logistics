@@ -2,9 +2,6 @@ export function parseKg(value) {
   if (value == null || value === '') return null;
   const s = String(value).trim();
 
-  const tonsMatch = s.match(/^([\d.]+)\s*T(ons?)?$/i);
-  if (tonsMatch) return parseFloat(tonsMatch[1]) * 1000;
-
   const kgMatch = s.match(/^([\d.]+)\s*kg$/i);
   if (kgMatch) return parseFloat(kgMatch[1]);
 

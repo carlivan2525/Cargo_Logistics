@@ -27,13 +27,27 @@ async function seed() {
   ]);
   console.log('Partners seeded');
 
-  // Fleet
+  // Fleet — realistic PH logistics vehicles
   await Vehicle.insertMany([
-    { vehicleId: 'VH-001', name: 'L300 Van',     type: 'L300',     plate: 'ABC 1234', capacity: '1.5T', status: 'Available' },
-    { vehicleId: 'VH-002', name: 'L300 Van',     type: 'L300',     plate: 'DEF 5678', capacity: '1.5T', status: 'Available' },
-    { vehicleId: 'VH-003', name: 'Truck (10W)',  type: 'Truck',    plate: 'GHI 9012', capacity: '10T',  status: 'Available' },
-    { vehicleId: 'VH-004', name: 'Truck (6W)',   type: 'Truck',    plate: 'JKL 3456', capacity: '6T',   status: 'Available' },
-    { vehicleId: 'VH-005', name: 'Expander Van', type: 'Expander', plate: 'MNO 7890', capacity: '2T',   status: 'Available' },
+    // Small parcels / docs (kg range)
+    { vehicleId: 'VH-001', name: 'Motorcycle (NMAX)',   type: 'Motorcycle',       plate: 'ABC 1234', capacity: '20kg',   status: 'Available' },
+    { vehicleId: 'VH-002', name: 'Motorcycle (PCX)',    type: 'Motorcycle',       plate: 'ABC 5678', capacity: '20kg',   status: 'Available' },
+    { vehicleId: 'VH-003', name: 'Sedan (Toyota Vios)', type: 'Sedan',            plate: 'BAA 1111', capacity: '200kg',  status: 'Available' },
+    { vehicleId: 'VH-004', name: 'SUV (Fortuner)',      type: 'SUV',              plate: 'BAB 2222', capacity: '400kg',  status: 'Available' },
+    // Light delivery (up to 1T)
+    { vehicleId: 'VH-005', name: 'L300 Van',            type: 'L300',             plate: 'DEF 1234', capacity: '800kg',  status: 'Available' },
+    { vehicleId: 'VH-006', name: 'L300 Van',            type: 'L300',             plate: 'DEF 5678', capacity: '800kg',  status: 'Available' },
+    { vehicleId: 'VH-007', name: 'Closed Van (Hiace)',  type: 'Closed Van',       plate: 'GHI 1234', capacity: '1000kg',  status: 'Available' },
+    { vehicleId: 'VH-008', name: 'Closed Van (Hiace)',  type: 'Closed Van',       plate: 'GHI 5678', capacity: '1000kg',  status: 'Available' },
+    // Medium freight (1T–4T)
+    { vehicleId: 'VH-009', name: 'Elf Truck (Isuzu)',   type: 'Elf Truck',        plate: 'JKL 1234', capacity: '2000kg',  status: 'Available' },
+    { vehicleId: 'VH-010', name: 'Elf Truck (Isuzu)',   type: 'Elf Truck',        plate: 'JKL 5678', capacity: '2000kg',  status: 'Available' },
+    { vehicleId: 'VH-011', name: 'Wing Van (4W)',        type: 'Wing Van',         plate: 'MNO 1234', capacity: '3000kg',  status: 'Available' },
+    // Heavy freight (6T–15T)
+    { vehicleId: 'VH-012', name: '6-Wheeler Truck',     type: '6-Wheeler Truck',  plate: 'PQR 1234', capacity: '6000kg',  status: 'Available' },
+    { vehicleId: 'VH-013', name: '6-Wheeler Truck',     type: '6-Wheeler Truck',  plate: 'PQR 5678', capacity: '6000kg',  status: 'Available' },
+    { vehicleId: 'VH-014', name: '10-Wheeler Truck',    type: '10-Wheeler Truck', plate: 'STU 1234', capacity: '10000kg', status: 'Available' },
+    { vehicleId: 'VH-015', name: '10-Wheeler Truck',    type: '10-Wheeler Truck', plate: 'STU 5678', capacity: '15000kg', status: 'Available' },
   ]);
   console.log('Vehicles seeded');
 

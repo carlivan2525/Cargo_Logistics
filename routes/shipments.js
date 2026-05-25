@@ -8,6 +8,7 @@ const Partner = require('../models/Partner');
 const auth = require('../middleware/auth');
 const { nextSequentialId } = require('../utils/ids');
 const { calculateFreight } = require('../utils/pricing');
+const { rateConfig, loadRateConfig } = require('../utils/rateConfig');
 const router = express.Router();
 
 const EDI_214_STATUSES = ['Pickup', 'In Transit', 'Delivered'];
@@ -103,23 +104,23 @@ router.put('/:id/status', auth, async (req, res) => {
         description: DESCRIPTION_MAP[status] || '',
       };
 
-      const SURPLUS_VENDOR_URL = 'https://landlady-snap-booting.ngrok-free.dev/api/edi/vendor/receive-214';
-      const HIRAYA_VENDOR_URL  = 'https://rejoicing-exposable-destitute.ngrok-free.dev/api/edi/receive-214';
+      const SURPLUS_VENDOR_URL = process.env.EDI_SURPLUS_214_VENDOR;
+      const HIRAYA_VENDOR_URL  = process.env.EDI_HIRAYA_214_VENDOR;
 
       const WEBHOOK_214 = {
         'surplus': [
-          'https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-214',
+          process.env.EDI_SURPLUS_214,
           SURPLUS_VENDOR_URL,
         ],
         'hiraya': [
-          'https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/214',
+          process.env.EDI_HIRAYA_214,
           HIRAYA_VENDOR_URL,
         ],
         'bulldog exchange': [
-          'https://landlady-snap-booting.ngrok-free.dev/api/edi/logistics/receive-214',
+          process.env.EDI_BULLDOG_214,
         ],
         'newforge': [
-          'https://gilled-operable-jingle.ngrok-free.dev/api/edi/send-214',
+          process.env.EDI_NEWFORGE_214,
         ],
       };
 
@@ -181,7 +182,8 @@ router.put('/:id/status', auth, async (req, res) => {
         let amount = 0;
         const shipmentRoute = (shipment.route || '').trim();
         if (shipmentRoute && vehicleType) {
-          const pricing = calculateFreight(shipmentRoute, vehicleType);
+          await loadRateConfig();
+          const pricing = calculateFreight(shipmentRoute, vehicleType, rateConfig.ratePerKm, rateConfig.minCharge);
           amount = pricing.amount || 0;
           if (pricing.error) {
             console.warn(`[pricing] ${pricing.error} — route: "${shipmentRoute}"`);
@@ -227,10 +229,10 @@ router.put('/:id/status', auth, async (req, res) => {
         const pdfUrl = `${BASE_URL}/api/invoices/pdf/${pdfToken}`;
 
         const INVOICE_WEBHOOKS = {
-          'surplus':          'https://patchy-rework-silver.ngrok-free.dev/api/edi/logistics/receive-210',
-          'hiraya':           'https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/receive/freight-invoice',
-          'bulldog exchange': 'https://landlady-snap-booting.ngrok-free.dev/api/edi/logistics/receive-210',
-          'newforge':         'https://gilled-operable-jingle.ngrok-free.dev/api/edi/send-210',
+          'surplus':          process.env.EDI_SURPLUS_210,
+          'hiraya':           process.env.EDI_HIRAYA_210,
+          'bulldog exchange': process.env.EDI_BULLDOG_210,
+          'newforge':         process.env.EDI_NEWFORGE_210,
         };
 
         const webhookUrl = partner?.endpoints?.invoice || INVOICE_WEBHOOKS[partnerName];

@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { Shield, Save, Eye, EyeOff, Moon, Sun, KeyRound, X, LogOut } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Shield, Save, Eye, EyeOff, Moon, Sun, KeyRound, X, LogOut, Truck, Pencil, Info } from 'lucide-react';
 import { api } from '../api';
 import { useTheme } from '../context/ThemeContext';
+
+const VEHICLE_TYPES = ['Motorcycle', 'Sedan', 'SUV', 'L300', 'Closed Van', 'Elf Truck', 'Wing Van', '6-Wheeler Truck', '10-Wheeler Truck'];
 
 function ChangePasswordModal({ onClose }) {
   const [current, setCurrent]     = useState('');
@@ -96,8 +98,37 @@ function Settings({ onLogout }) {
   const { isDark, setTheme } = useTheme();
   const [showModal, setShowModal] = useState(false);
 
+  // Rate config
+  const [ratePerKm, setRatePerKm]     = useState({});
+  const [minCharge, setMinCharge]     = useState({});
+  const [editRates, setEditRates]     = useState(false);
+  const [draftRates, setDraftRates]   = useState(null);
+  const [savingRates, setSavingRates] = useState(false);
+  const [ratesSaved, setRatesSaved]   = useState(false);
+
+  useEffect(() => {
+    api.get('/pricing/config')
+      .then(data => { setRatePerKm(data.ratePerKm); setMinCharge(data.minCharge); })
+      .catch(() => {});
+  }, []);
+
+  const startEdit = () => { setDraftRates({ ratePerKm: { ...ratePerKm }, minCharge: { ...minCharge } }); setEditRates(true); setRatesSaved(false); };
+  const cancelEdit = () => { setEditRates(false); setDraftRates(null); };
+  const saveRates = async () => {
+    setSavingRates(true);
+    try {
+      const updated = await api.put('/pricing/config', draftRates);
+      setRatePerKm(updated.ratePerKm); setMinCharge(updated.minCharge);
+      setEditRates(false); setDraftRates(null); setRatesSaved(true);
+      setTimeout(() => setRatesSaved(false), 2000);
+    } catch (err) { alert(err.message); }
+    finally { setSavingRates(false); }
+  };
+
+  const fmt = n => '₱' + Number(n || 0).toLocaleString('en-PH');
+
   return (
-    <div className="w-full max-w-md space-y-4">
+    <div className="w-full max-w-2xl space-y-4">
       {showModal && <ChangePasswordModal onClose={() => setShowModal(false)} />}
 
       {/* Dark mode */}
@@ -132,6 +163,66 @@ function Settings({ onLogout }) {
           className="text-xs px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition cursor-pointer border-none">
           Change Password
         </button>
+      </div>
+
+      {/* Rate Schedule */}
+      <div className="bg-card border border-app rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-app">
+          <div className="flex items-center gap-2">
+            <Truck size={14} className="text-blue-400" />
+            <div>
+              <p className="text-sm font-medium text-app">Freight Rate Schedule</p>
+              <p className="text-xs text-gray-500">Rate per km and minimum charge per vehicle type</p>
+            </div>
+            {ratesSaved && <span className="text-xs text-green-400 ml-1">Saved!</span>}
+          </div>
+          {!editRates
+            ? <button onClick={startEdit} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-input border border-app text-blue-400 hover:text-blue-300 cursor-pointer transition">
+                <Pencil size={11} /> Edit Rates
+              </button>
+            : <div className="flex items-center gap-2">
+                <button onClick={cancelEdit} className="text-xs px-3 py-1.5 rounded-lg bg-hover border border-app text-gray-400 cursor-pointer transition">Cancel</button>
+                <button onClick={saveRates} disabled={savingRates}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white border-none cursor-pointer transition disabled:opacity-50">
+                  <Save size={11} /> {savingRates ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+          }
+        </div>
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-gray-500 border-b border-app">
+              <th className="text-left px-5 py-2 font-medium">Vehicle</th>
+              <th className="text-left px-5 py-2 font-medium">Rate / km</th>
+              <th className="text-left px-5 py-2 font-medium">Min Charge</th>
+            </tr>
+          </thead>
+          <tbody>
+            {VEHICLE_TYPES.map(v => (
+              <tr key={v} className="border-b border-subtle">
+                <td className="px-5 py-2.5 font-medium text-app">{v}</td>
+                <td className="px-5 py-2.5">
+                  {editRates
+                    ? <input type="number" min="1" value={draftRates.ratePerKm[v] ?? ''}
+                        onChange={e => setDraftRates(d => ({ ...d, ratePerKm: { ...d.ratePerKm, [v]: e.target.value } }))}
+                        className="w-24 bg-input border border-app rounded px-2 py-0.5 text-xs text-app outline-none focus:border-blue-500" />
+                    : <span className="text-gray-300">{fmt(ratePerKm[v])}</span>}
+                </td>
+                <td className="px-5 py-2.5">
+                  {editRates
+                    ? <input type="number" min="1" value={draftRates.minCharge[v] ?? ''}
+                        onChange={e => setDraftRates(d => ({ ...d, minCharge: { ...d.minCharge, [v]: e.target.value } }))}
+                        className="w-24 bg-input border border-app rounded px-2 py-0.5 text-xs text-app outline-none focus:border-blue-500" />
+                    : <span className="text-gray-300">{fmt(minCharge[v])}</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="px-5 py-2.5 border-t border-app bg-input/20 flex items-center gap-1.5">
+          <Info size={11} className="text-gray-500 flex-shrink-0" />
+          <p className="text-[10px] text-gray-500">Changes apply to all new invoices going forward.</p>
+        </div>
       </div>
 
       {/* Logout */}

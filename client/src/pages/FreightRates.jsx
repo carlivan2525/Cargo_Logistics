@@ -24,15 +24,20 @@ const destIcon = new L.Icon({
   iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
 });
 
-const VEHICLE_TYPES = ['Motorcycle', 'L300', 'Expander', 'Truck'];
+const VEHICLE_TYPES = ['Motorcycle', 'Sedan', 'SUV', 'L300', 'Closed Van', 'Elf Truck', 'Wing Van', '6-Wheeler Truck', '10-Wheeler Truck'];
 const VEHICLE_DESC = {
-  Motorcycle: 'Motorbike (Nmax etc.) — docs & small parcels',
-  L300:       'Small delivery van — up to 1 ton',
-  Expander:   'Medium van / MPV — up to 2 tons',
-  Truck:      'Heavy truck (6W/10W) — up to 10 tons',
+  'Motorcycle':        'Motorbike — docs & small parcels up to 20kg',
+  'Sedan':             'Car delivery — up to 200kg',
+  'SUV':               'SUV — up to 400kg',
+  'L300':              'L300 Van — up to 800kg',
+  'Closed Van':        'Closed Van (Hiace) — up to 1 ton',
+  'Elf Truck':         'Isuzu Elf — up to 2 tons',
+  'Wing Van':          'Wing Van (4W) — up to 3 tons',
+  '6-Wheeler Truck':   '6-Wheeler Truck — up to 6 tons',
+  '10-Wheeler Truck':  '10-Wheeler Truck — up to 15 tons',
 };
-const RATE_PER_KM = { Motorcycle: 10, L300: 25, Expander: 30, Truck: 80 };
-const MIN_CHARGE  = { Motorcycle: 200, L300: 500, Expander: 700, Truck: 1500 };
+const DEFAULT_RATE_PER_KM = { Motorcycle: 10, Sedan: 15, SUV: 20, L300: 25, 'Closed Van': 30, 'Elf Truck': 40, 'Wing Van': 50, '6-Wheeler Truck': 65, '10-Wheeler Truck': 80 };
+const DEFAULT_MIN_CHARGE  = { Motorcycle: 150, Sedan: 250, SUV: 350, L300: 500, 'Closed Van': 600, 'Elf Truck': 800, 'Wing Van': 1000, '6-Wheeler Truck': 1500, '10-Wheeler Truck': 2000 };
 
 // Fly map to fit route bounds
 function MapFitter({ coords }) {
@@ -154,11 +159,59 @@ function FreightRates() {
   const [vehicleType, setVehicle]   = useState('Truck');
   const [result, setResult]         = useState(null);
   const [mapCoords, setMapCoords]   = useState(null);
-  const [roadPath, setRoadPath]     = useState(null);   // [[lat,lng], ...] from OSRM
-  const [roadKm, setRoadKm]         = useState(null);   // actual road km from OSRM
+  const [roadPath, setRoadPath]     = useState(null);
+  const [roadKm, setRoadKm]         = useState(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [error, setError]           = useState('');
   const [loading, setLoading]       = useState(false);
+
+  // Rate schedule state
+  const [ratePerKm, setRatePerKm]   = useState(DEFAULT_RATE_PER_KM);
+  const [minCharge, setMinCharge]   = useState(DEFAULT_MIN_CHARGE);
+  const [editRates, setEditRates]   = useState(false);
+  const [draftRates, setDraftRates] = useState(null);
+  const [savingRates, setSavingRates] = useState(false);
+  const [ratesSaved, setRatesSaved] = useState(false);
+
+  useEffect(() => {
+    api.get('/pricing/config')
+      .then(data => {
+        setRatePerKm(data.ratePerKm);
+        setMinCharge(data.minCharge);
+      })
+      .catch(() => {});
+  }, []);
+
+  const startEdit = () => {
+    setDraftRates({
+      ratePerKm: { ...ratePerKm },
+      minCharge:  { ...minCharge },
+    });
+    setEditRates(true);
+    setRatesSaved(false);
+  };
+
+  const cancelEdit = () => {
+    setEditRates(false);
+    setDraftRates(null);
+  };
+
+  const saveRates = async () => {
+    setSavingRates(true);
+    try {
+      const updated = await api.put('/pricing/config', draftRates);
+      setRatePerKm(updated.ratePerKm);
+      setMinCharge(updated.minCharge);
+      setEditRates(false);
+      setDraftRates(null);
+      setRatesSaved(true);
+      setTimeout(() => setRatesSaved(false), 2000);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSavingRates(false);
+    }
+  };
 
   const canCalculate = origin && dest && origin !== dest;
 
@@ -192,72 +245,10 @@ function FreightRates() {
   const PH_CENTER = [12.8797, 121.7740];
 
   return (
-    <div className="flex gap-4 h-full" style={{ minHeight: '600px' }}>
+    <div className="flex gap-4 h-full" style={{ minHeight: '500px' }}>
 
-      {/* LEFT — Map */}
-      <div className="flex-1 bg-card rounded-xl border border-app overflow-hidden flex flex-col">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-app shrink-0">
-          <MapPin size={13} className="text-blue-400" />
-          <span className="font-semibold text-sm text-app">Route Map</span>
-          {mapCoords && result && (
-            <span className="text-xs text-gray-500 ml-1">
-              {result.origin} → {result.destination}
-              {routeLoading
-                ? <span className="text-yellow-400 ml-1">· loading road...</span>
-                : <span className="ml-1">· {result.distanceKm} km</span>}
-            </span>
-          )}
-        </div>
-        <div className="flex-1">
-          <MapContainer
-            center={mapCoords ? [mapCoords.origin.lat, mapCoords.origin.lng] : PH_CENTER}
-            zoom={6}
-            style={{ height: '100%', width: '100%', minHeight: '520px' }}
-            scrollWheelZoom={true}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            {mapCoords && (
-              <>
-                <MapFitter coords={mapCoords} />
-                <Marker position={[mapCoords.origin.lat, mapCoords.origin.lng]} icon={originIcon}>
-                  <Popup><strong>{result?.origin}</strong><br />Origin</Popup>
-                </Marker>
-                <Marker position={[mapCoords.dest.lat, mapCoords.dest.lng]} icon={destIcon}>
-                  <Popup><strong>{result?.destination}</strong><br />Destination</Popup>
-                </Marker>
-                {/* Road route from OSRM — falls back to straight dashed line */}
-                {roadPath ? (
-                  <Polyline
-                    positions={roadPath}
-                    pathOptions={{ color: '#3b82f6', weight: 4, opacity: 0.9 }}
-                  />
-                ) : (
-                  <Polyline
-                    positions={[
-                      [mapCoords.origin.lat, mapCoords.origin.lng],
-                      [mapCoords.dest.lat,   mapCoords.dest.lng],
-                    ]}
-                    pathOptions={{ color: '#3b82f6', weight: 3, dashArray: '8 6', opacity: 0.6 }}
-                  />
-                )}
-              </>
-            )}
-            {!mapCoords && (
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, pointerEvents: 'none' }}>
-                <div className="bg-card/80 backdrop-blur-sm border border-app rounded-xl px-4 py-3 text-xs text-gray-400 text-center">
-                  Select origin & destination<br />then calculate to see the route
-                </div>
-              </div>
-            )}
-          </MapContainer>
-        </div>
-      </div>
-
-      {/* RIGHT — Calculator */}
-      <div className="w-80 shrink-0 space-y-4 overflow-y-auto">
+      {/* LEFT — Calculator */}
+      <div className="w-[480px] shrink-0 space-y-4 overflow-y-auto">
         <div className="bg-card rounded-xl border border-app overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-app">
             <Calculator size={13} className="text-blue-400" />
@@ -309,34 +300,61 @@ function FreightRates() {
           </div>
         </div>
 
-        {/* Rate Schedule */}
-        <div className="bg-card rounded-xl border border-app overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-app">
-            <Truck size={13} className="text-gray-400" />
-            <span className="font-semibold text-sm text-app">Rate Schedule</span>
-          </div>
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="text-gray-500 border-b border-app">
-                <th className="text-left px-4 py-2 font-medium">Vehicle</th>
-                <th className="text-left px-4 py-2 font-medium">Rate/km</th>
-                <th className="text-left px-4 py-2 font-medium">Min</th>
-              </tr>
-            </thead>
-            <tbody>
-              {VEHICLE_TYPES.map(v => (
-                <tr key={v} className="border-b border-subtle">
-                  <td className="px-4 py-2 font-medium text-app">{v}</td>
-                  <td className="px-4 py-2 text-gray-300">{fmt(RATE_PER_KM[v])}</td>
-                  <td className="px-4 py-2 text-gray-300">{fmt(MIN_CHARGE[v])}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="px-4 py-2.5 border-t border-app bg-input/20 flex items-start gap-1.5">
-            <Info size={11} className="text-gray-500 mt-0.5 flex-shrink-0" />
-            <p className="text-[10px] text-gray-500">Straight-line distance × 1.3 road factor. 3,785 PH cities covered.</p>
-          </div>
+        {/* Rate Schedule — moved to Settings */}
+      </div>
+
+      {/* RIGHT — Map */}
+      <div className="flex-1 min-w-0 bg-card rounded-xl border border-app overflow-hidden flex flex-col">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-app shrink-0">
+          <MapPin size={13} className="text-blue-400" />
+          <span className="font-semibold text-sm text-app">Route Map</span>
+          {mapCoords && result && (
+            <span className="text-xs text-gray-500 ml-1">
+              {result.origin} → {result.destination}
+              {routeLoading
+                ? <span className="text-yellow-400 ml-1">· loading road...</span>
+                : <span className="ml-1">· {result.distanceKm} km</span>}
+            </span>
+          )}
+        </div>
+        <div className="flex-1">
+          <MapContainer
+            center={mapCoords ? [mapCoords.origin.lat, mapCoords.origin.lng] : PH_CENTER}
+            zoom={6}
+            style={{ height: '100%', width: '100%', minHeight: '400px' }}
+            scrollWheelZoom={true}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            {mapCoords && (
+              <>
+                <MapFitter coords={mapCoords} />
+                <Marker position={[mapCoords.origin.lat, mapCoords.origin.lng]} icon={originIcon}>
+                  <Popup><strong>{result?.origin}</strong><br />Origin</Popup>
+                </Marker>
+                <Marker position={[mapCoords.dest.lat, mapCoords.dest.lng]} icon={destIcon}>
+                  <Popup><strong>{result?.destination}</strong><br />Destination</Popup>
+                </Marker>
+                {roadPath ? (
+                  <Polyline positions={roadPath} pathOptions={{ color: '#3b82f6', weight: 4, opacity: 0.9 }} />
+                ) : (
+                  <Polyline
+                    positions={[[mapCoords.origin.lat, mapCoords.origin.lng],[mapCoords.dest.lat, mapCoords.dest.lng]]}
+                    pathOptions={{ color: '#3b82f6', weight: 3, dashArray: '8 6', opacity: 0.6 }}
+                  />
+                )}
+              </>
+            )}
+            {!mapCoords && (
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, pointerEvents: 'none' }}>
+                <div className="bg-card/80 backdrop-blur-sm border border-app rounded-xl px-4 py-3 text-xs text-gray-400 text-center">
+                  Select origin & destination<br />then calculate to see the route
+                </div>
+              </div>
+            )}
+          </MapContainer>
         </div>
       </div>
     </div>

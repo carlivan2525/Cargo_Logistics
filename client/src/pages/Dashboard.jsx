@@ -106,7 +106,7 @@ function Dashboard({ user, onLogout }) {
       const transmissions = txRes.data ?? txRes;
       setCounts({
         tenders:   tenders.filter(t => t.status === 'Pending').length,
-        shipments: shipments.filter(s => s.status === 'In Transit').length,
+        shipments: shipments.filter(s => s.status === 'Pending').length,
         invoices:  invoices.filter(i => i.status === 'Pending').length,
       });
       setStats({
@@ -183,7 +183,12 @@ function Dashboard({ user, onLogout }) {
                           {label}
                         </span>
                       </span>
-                      <span className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 flex-shrink-0">
+                      {(badge || badgeRed || badgeYellow) && (
+                        <span className="group-hover/sidebar:hidden flex-shrink-0 flex items-center">
+                          <span className={`w-2 h-2 rounded-full block ${badgeRed ? 'bg-red-500' : badgeYellow ? 'bg-yellow-500' : 'bg-white/60'}`} />
+                        </span>
+                      )}
+                      <span className="hidden group-hover/sidebar:flex flex-shrink-0 items-center gap-1">
                         {badge       && <span className="text-[11px] bg-white/15 px-1.5 py-0.5 rounded">{badge}</span>}
                         {badgeRed    && <span className="text-[11px] bg-red-500 px-1.5 py-0.5 rounded">{badgeRed}</span>}
                         {badgeYellow && <span className="text-[11px] bg-yellow-500 text-black px-1.5 py-0.5 rounded font-semibold">{badgeYellow}</span>}

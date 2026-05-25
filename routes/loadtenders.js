@@ -201,7 +201,7 @@ router.post('/:id/respond', auth, async (req, res) => {
 
     if (partnerName === 'surplus') {
       try {
-        await fetch('https://patchy-rework-silver.ngrok-free.dev/api/edi/customer/receive-990', {
+        await fetch(process.env.EDI_SURPLUS_990, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(edi990Payload),
         });
@@ -210,7 +210,7 @@ router.post('/:id/respond', auth, async (req, res) => {
 
     if (partnerName === 'hiraya') {
       try {
-        await fetch('https://wildcard-squeegee-plunder.ngrok-free.dev/api/edi/cargo/webhook', {
+        await fetch(process.env.EDI_HIRAYA_990, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(edi990Payload),
         });
@@ -219,7 +219,7 @@ router.post('/:id/respond', auth, async (req, res) => {
 
     if (partnerName === 'bulldog exchange') {
       try {
-        await fetch('https://landlady-snap-booting.ngrok-free.dev/api/edi/logistics/receive-990', {
+        await fetch(process.env.EDI_BULLDOG_990, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(edi990Payload),
         });

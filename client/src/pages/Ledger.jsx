@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Wallet, ArrowDownCircle, ArrowUpCircle, AlertCircle, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Wallet, ArrowDownCircle, ArrowUpCircle, AlertCircle, FileText, ChevronLeft, ChevronRight, Smartphone, CreditCard } from 'lucide-react';
 import { api } from '../api';
 import { usePolling } from '../hooks/usePolling';
 import { useToast } from '../components/Toast';
@@ -105,7 +105,7 @@ function WithdrawModal({ balance, onConfirm, onCancel }) {
                     ${method === m
                       ? 'bg-orange-600 border-orange-600 text-white'
                       : 'bg-input border-app text-gray-400 hover:text-app'}`}>
-                  {m === 'gcash' ? '📱 GCash' : '💳 Credit Card'}
+                  {m === 'gcash' ? 'GCash' : 'Credit Card'}
                 </button>
               ))}
             </div>

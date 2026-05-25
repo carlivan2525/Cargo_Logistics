@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Search, AlertTriangle, CheckCircle2, Clock, Send, Download, Copy, ClipboardCheck, FileCode } from 'lucide-react';
+import { FileText, Search, AlertTriangle, CheckCircle2, Clock, Send, Download, Copy, ClipboardCheck, Eye, X } from 'lucide-react';
 import { api } from '../api';
 import { usePolling } from '../hooks/usePolling';
 import { useToast } from '../components/Toast';
@@ -131,6 +131,7 @@ function Invoices() {
   const [copied, setCopied]         = useState(false);
   const [x820Invoice, setX820Invoice] = useState(null);
   const [copied820, setCopied820]     = useState(false);
+  const [viewInvoice, setViewInvoice] = useState(null);
   const { show: showToast, node: toastNode } = useToast();
 
   const load = () =>
@@ -147,6 +148,7 @@ function Invoices() {
     try {
       const updated = await api.post(`/invoices/${id}/send210`, {});
       setInvoices(prev => prev.map(i => i._id === id ? updated : i));
+      setViewInvoice(updated);
       showToast('997 receipt sent successfully.', 'success');
     } catch (err) {
       showToast(err.message, 'error');
@@ -256,8 +258,7 @@ function Invoices() {
                 <th className="text-left px-5 py-2.5 font-medium">Shipment</th>
                 <th className="text-left px-5 py-2.5 font-medium">Amount</th>
                 <th className="text-left px-5 py-2.5 font-medium">Due Date</th>
-                <th className="text-left px-5 py-2.5 font-medium">EDI 210 & 997</th>
-                <th className="text-left px-5 py-2.5 font-medium">Status</th>
+                <th className="text-left px-5 py-2.5 font-medium">Status / 820</th>
                 <th className="text-right px-5 py-2.5 font-medium">Action</th>
               </tr>
             </thead>
@@ -272,13 +273,6 @@ function Invoices() {
                     {fmtDate(inv.dueDate)}
                   </td>
                   <td className="px-5 py-3">
-                    {inv.ediSent && inv.edi997Sent
-                      ? <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 font-medium">210 & 997 Sent</span>
-                      : inv.ediSent
-                        ? <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-medium">210 Sent</span>
-                        : <span className="text-xs text-gray-600">—</span>}
-                  </td>
-                  <td className="px-5 py-3">
                     <div className="flex flex-col items-start gap-1">
                       <button
                         type="button"
@@ -289,40 +283,81 @@ function Invoices() {
                     </div>
                   </td>
                   <td className="px-5 py-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button onClick={() => { setCopied(false); setEdiTab('210'); setViewMode('x12'); setX12Invoice(inv); }}
-                        className="flex items-center gap-1 text-xs text-gray-400 hover:text-app transition cursor-pointer bg-transparent border-none">
-                        <Copy size={11} /> View X12
-                      </button>
-                      {inv.status === 'Paid' && (
-                        <button onClick={() => downloadPdf(inv)}
-                          className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition cursor-pointer bg-transparent border-none">
-                          <Download size={11} /> PDF
-                        </button>
-                      )}
-                      {inv.status === 'Paid' && (
-                        <button
-                          onClick={() => send210(inv._id)}
-                          disabled={sending.has(inv._id)}
-                          className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition cursor-pointer bg-transparent border-none disabled:opacity-50 disabled:cursor-not-allowed">
-                          {sending.has(inv._id)
-                            ? <><span className="w-2.5 h-2.5 border border-purple-400 border-t-transparent rounded-full animate-spin" /> Sending…</>
-                            : <><Send size={11} /> {inv.edi997Sent ? 'Resend (997)' : 'Send Receipt (997)'}</>
-                          }
-                        </button>
-                      )}
-                    </div>
+                    <button onClick={() => setViewInvoice(inv)}
+                      className="flex items-center gap-1 text-xs text-gray-400 hover:text-app transition cursor-pointer bg-transparent border-none ml-auto">
+                      <Eye size={11} /> View
+                    </button>
                   </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} className="text-center py-10 text-gray-600 text-sm">No invoices found.</td></tr>
+                <tr><td colSpan={7} className="text-center py-10 text-gray-600 text-sm">No invoices found.</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
     </div>
+
+    {/* Invoice Detail Modal */}
+    {viewInvoice && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div className="bg-card border border-app rounded-2xl w-full max-w-md shadow-2xl">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-app">
+            <div className="flex items-center gap-2">
+              <FileText size={14} className="text-gray-400" />
+              <span className="font-semibold text-sm text-app">Invoice</span>
+              <span className="text-xs font-mono text-gray-500">{viewInvoice.invoiceId}</span>
+            </div>
+            <button onClick={() => setViewInvoice(null)} className="text-gray-500 hover:text-app bg-transparent border-none cursor-pointer"><X size={15} /></button>
+          </div>
+
+          {/* Details */}
+          <div className="px-6 py-4 space-y-3">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div><p className="text-gray-500 mb-0.5">Partner</p><p className="text-app font-medium">{viewInvoice.partner?.name}</p></div>
+              <div><p className="text-gray-500 mb-0.5">Shipment</p><p className="text-app font-mono">{viewInvoice.shipment?.shipmentId}</p></div>
+              <div><p className="text-gray-500 mb-0.5">Amount</p><p className="text-app font-semibold">{fmtAmt(viewInvoice.amount)}</p></div>
+              <div><p className="text-gray-500 mb-0.5">Due Date</p><p className={viewInvoice.status === 'Overdue' ? 'text-red-400 font-medium' : 'text-app'}>{fmtDate(viewInvoice.dueDate)}</p></div>
+              <div><p className="text-gray-500 mb-0.5">Status</p>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLE[viewInvoice.status]}`}>{viewInvoice.status}</span>
+              </div>
+              <div><p className="text-gray-500 mb-0.5">EDI</p>
+                {viewInvoice.ediSent && viewInvoice.edi997Sent
+                  ? <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 font-medium">210 & 997 Sent</span>
+                  : viewInvoice.ediSent
+                    ? <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-medium">210 Sent</span>
+                    : <span className="text-xs text-gray-600">—</span>}
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 px-6 py-4 border-t border-app">
+            <button onClick={() => { setCopied(false); setEdiTab('210'); setViewMode('x12'); setX12Invoice(viewInvoice); setViewInvoice(null); }}
+              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-input border border-app text-gray-400 hover:text-app transition cursor-pointer">
+              <Copy size={11} /> View X12
+            </button>
+            {viewInvoice.status === 'Paid' && (
+              <button onClick={() => { downloadPdf(viewInvoice); }}
+                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition cursor-pointer border-none">
+                <Download size={11} /> PDF
+              </button>
+            )}
+            {viewInvoice.status === 'Paid' && (
+              <button onClick={() => send210(viewInvoice._id)}
+                disabled={sending.has(viewInvoice._id)}
+                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition cursor-pointer border-none disabled:opacity-50">
+                {sending.has(viewInvoice._id)
+                  ? <><span className="w-2.5 h-2.5 border border-white/40 border-t-transparent rounded-full animate-spin" /> Sending…</>
+                  : <><Send size={11} /> {viewInvoice.edi997Sent ? 'Resend (997)' : 'Send Receipt (997)'}</>}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* EDI Viewer Modal */}
     {x12Invoice && (

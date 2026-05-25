@@ -33,18 +33,27 @@ const ROAD_FACTOR = 1.3;
 //   Expander   → ~₱2,145 (₱30/km, min ₱700)
 //   Truck      → ~₱5,720 (₱80/km, min ₱1,500)
 const RATE_PER_KM = {
-  Motorcycle: 10,   // small motorbike, docs/small parcels
-  L300:       25,   // small delivery van
-  Expander:   30,   // medium van/MPV
-  Truck:      80,   // heavy truck (6W/10W)
+  Motorcycle:          10,
+  Sedan:               15,
+  SUV:                 20,
+  L300:                25,
+  'Closed Van':        30,
+  'Elf Truck':         40,
+  'Wing Van':          50,
+  '6-Wheeler Truck':   65,
+  '10-Wheeler Truck':  80,
 };
 
-// Minimum charge per trip (PHP)
 const MIN_CHARGE = {
-  Motorcycle: 200,
-  L300:       500,
-  Expander:   700,
-  Truck:      1500,
+  Motorcycle:          150,
+  Sedan:               250,
+  SUV:                 350,
+  L300:                500,
+  'Closed Van':        600,
+  'Elf Truck':         800,
+  'Wing Van':          1000,
+  '6-Wheeler Truck':   1500,
+  '10-Wheeler Truck':  2000,
 };
 
 /**
@@ -93,10 +102,11 @@ function parseRoute(route) {
 
 /**
  * Calculate freight amount for a given route and vehicle type.
+ * Accepts optional custom ratePerKm and minCharge overrides.
  * Returns { amount, distanceKm, ratePerKm, vehicleType, origin, destination }.
  * If cities not found, returns { amount: 0, error: '...' }.
  */
-function calculateFreight(route, vehicleType) {
+function calculateFreight(route, vehicleType, customRatePerKm, customMinCharge) {
   const parsed = parseRoute(route);
   if (!parsed) return { amount: 0, error: 'Invalid route format. Expected "Origin - Destination".' };
 
@@ -107,10 +117,13 @@ function calculateFreight(route, vehicleType) {
   if (!originCoords) return { amount: 0, error: `City not found in PH database: "${originName}"` };
   if (!destCoords)   return { amount: 0, error: `City not found in PH database: "${destName}"` };
 
+  const rates    = customRatePerKm || RATE_PER_KM;
+  const minimums = customMinCharge  || MIN_CHARGE;
+
   const straightKm = haversineKm(originCoords.lat, originCoords.lng, destCoords.lat, destCoords.lng);
   const distanceKm = Math.round(straightKm * ROAD_FACTOR);
-  const ratePerKm  = RATE_PER_KM[vehicleType] ?? RATE_PER_KM.L300;
-  const minCharge  = MIN_CHARGE[vehicleType]   ?? MIN_CHARGE.L300;
+  const ratePerKm  = rates[vehicleType]    ?? rates.L300;
+  const minCharge  = minimums[vehicleType] ?? minimums.L300;
   const computed   = Math.round(distanceKm * ratePerKm);
   const amount     = Math.max(computed, minCharge);
 
