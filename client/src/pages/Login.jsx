@@ -1,95 +1,102 @@
 import { useState } from 'react';
-import { Eye, EyeOff, Truck } from 'lucide-react';
+import { Eye, EyeOff, X, Check } from 'lucide-react';
 import logo from '../assets/CarGO-logo.png';
 import { api } from '../api';
 
+const rajdhani = { fontFamily: 'Rajdhani, sans-serif', fontWeight: 700 };
+
 function Login({ onLogin }) {
+  const [drawer, setDrawer] = useState(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loadingState, setLoadingState] = useState(null); // null | 'loading' | 'success'
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoadingState('loading');
     try {
       const data = await api.post('/auth/login', { username, password });
       localStorage.setItem('token', data.token);
-      onLogin(data.username);
+      setLoadingState('success');
+      setTimeout(() => onLogin(data.username), 1500);
     } catch (err) {
+      setLoadingState(null);
       alert('Server error. Try again.');
     }
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-app relative overflow-hidden">
+    <div
+      className="min-h-screen w-full relative overflow-hidden flex flex-col"
+      style={{ backgroundImage: "url('/loginbg.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}
+    >
+      <div className="absolute inset-0 bg-black/70 pointer-events-none" />
 
-      {/* Background glow blobs */}
-      <div className="absolute w-72 h-72 bg-blue-600/20 rounded-full blur-3xl -top-20 -left-20 pointer-events-none" />
-      <div className="absolute w-96 h-96 bg-blue-800/20 rounded-full blur-3xl -bottom-24 -right-20 pointer-events-none" />
+      {/* Centered Hero */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-4">
+        <img src={logo} alt="CarGO Logo" className="h-20 w-auto object-contain mb-4 drop-shadow-xl" />
 
-      {/* Card */}
-      <div className="relative z-10 flex w-[860px] max-w-[95vw] min-h-[500px] rounded-2xl overflow-hidden shadow-2xl border border-app">
+        <h1 className="text-4xl mb-2" style={{ ...rajdhani, color: '#ffffff', textShadow: '0 2px 20px rgba(0,0,0,0.8)' }}>
+          CarGO Logistics
+        </h1>
 
-        {/* Left Panel */}
-        <div className="hidden md:flex w-[38%] bg-card border-r border-app flex-col items-center justify-between p-10 text-white">
+        <p className="text-sm text-white/80 tracking-widest uppercase mb-10" style={{ textShadow: '0 1px 10px rgba(0,0,0,0.9)' }}>
+          Moving freight forward, every mile.
+        </p>
 
-          {/* Logo */}
-          <div className="flex flex-col items-center gap-3">
-            <img src={logo} alt="CarGO Logo" className="h-16 w-auto object-contain" />
-            <p className="text-xs text-gray-400 mt-1 text-center">Managing your shipments, simplified.</p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setDrawer('login')}
+            className="px-7 py-2.5 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition cursor-pointer border-none"
+          >
+            Login
+          </button>
+          <button
+            onClick={() => setDrawer('about')}
+            className="px-7 py-2.5 rounded-lg text-sm font-semibold text-white border border-white/30 bg-white/10 hover:bg-white/20 transition cursor-pointer backdrop-blur-sm"
+          >
+            About
+          </button>
+        </div>
+      </div>
+
+      {/* Backdrop */}
+      {drawer && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm"
+          onClick={() => setDrawer(null)}
+        />
+      )}
+
+      {/* Side Drawer — LEFT */}
+      <div
+        className={`fixed top-0 left-0 z-40 h-full w-[380px] max-w-[95vw] flex flex-col relative transition-transform duration-300 ease-out ${drawer ? 'translate-x-0' : '-translate-x-full'}`}
+        style={{ background: 'linear-gradient(160deg, #0f1623 0%, #1a2236 60%, #0f1623 100%)', borderRight: '1px solid rgba(255,255,255,0.08)', boxShadow: '4px 0 40px rgba(0,0,0,0.6)' }}
+      >
+        {/* Drawer Header */}
+        <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="flex items-center gap-2.5">
+            <img src={logo} alt="CarGO Logo" className="h-8 w-auto object-contain" />
+            <span style={{ ...rajdhani, fontSize: '1rem', color: '#ffffff' }}>CarGO Logistics</span>
           </div>
-
-          {/* Truck SVG illustration */}
-          <div className="flex-1 flex items-center justify-center py-6">
-            <svg viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-44 opacity-80">
-              <rect x="10" y="90" width="180" height="6" rx="3" fill="rgba(255,255,255,0.08)" />
-              <rect x="20" y="55" width="100" height="38" rx="6" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-              <rect x="120" y="65" width="50" height="28" rx="5" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-              <rect x="128" y="70" width="20" height="14" rx="3" fill="rgba(96,165,250,0.3)" />
-              <circle cx="50"  cy="93" r="9" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
-              <circle cx="50"  cy="93" r="4" fill="rgba(96,165,250,0.6)" />
-              <circle cx="100" cy="93" r="9" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
-              <circle cx="100" cy="93" r="4" fill="rgba(96,165,250,0.6)" />
-              <circle cx="148" cy="93" r="9" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
-              <circle cx="148" cy="93" r="4" fill="rgba(96,165,250,0.6)" />
-              <circle cx="105" cy="28" r="12" fill="rgba(96,165,250,0.2)" stroke="rgba(96,165,250,0.6)" strokeWidth="1.5" />
-              <circle cx="105" cy="28" r="5"  fill="#60a5fa" />
-              <line x1="105" y1="40" x2="105" y2="55" stroke="rgba(96,165,250,0.5)" strokeWidth="1.5" strokeDasharray="3 2" />
-            </svg>
-          </div>
-
-          {/* Feature text */}
-          <div className="text-center mb-3">
-            <div className="flex items-center justify-center gap-1.5 mb-1">
-              <Truck size={13} className="text-blue-400" />
-              <p className="text-sm font-semibold text-app">Real-time Tracking</p>
-            </div>
-            <p className="text-xs text-gray-500 leading-relaxed">Monitor shipments, manage EDI docs, and streamline logistics operations.</p>
-          </div>
-
-          {/* Dots */}
-          <div className="flex gap-1.5">
-            <span className="w-5 h-1.5 bg-blue-500 rounded-full" />
-            <span className="w-1.5 h-1.5 bg-white/20 rounded-full" />
-            <span className="w-1.5 h-1.5 bg-white/20 rounded-full" />
-          </div>
+          <button
+            onClick={() => setDrawer(null)}
+            className="text-gray-500 hover:text-white transition cursor-pointer bg-transparent border-none p-1 rounded-md hover:bg-white/10"
+            aria-label="Close"
+          >
+            <X size={16} />
+          </button>
         </div>
 
-        {/* Right Panel */}
-        <div className="flex-1 bg-card flex items-center justify-center px-10 py-12">
-          <div className="w-full max-w-sm">
-
-            {/* Mobile logo */}
-            <div className="flex md:hidden justify-center mb-6">
-              <img src={logo} alt="CarGO Logo" className="h-10 w-auto object-contain" />
-            </div>
-
-            <h2 className="text-xl font-semibold text-app mb-1">Log in to CarGO</h2>
-            <p className="text-sm text-gray-500 mb-7">Login using your official credentials</p>
-
+        {/* Login Form */}
+        {drawer === 'login' && (
+          <div className="flex-1 flex flex-col px-8 py-10">
+            <p className="text-[10px] text-gray-600 tracking-[0.2em] uppercase mb-1">Welcome back</p>
+            <h2 className="text-xl font-semibold text-white mb-10">Sign in to your account</h2>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="username" className="text-sm font-medium text-gray-300">Username</label>
+                <label htmlFor="username" className="text-xs font-medium text-gray-400 uppercase tracking-wider">Username</label>
                 <input
                   id="username"
                   type="text"
@@ -97,12 +104,12 @@ function Login({ onLogin }) {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
-                  className="px-3.5 py-2.5 border border-app rounded-lg text-sm bg-input text-white placeholder-gray-600 outline-none focus:border-blue-500 focus:bg-hover transition"
+                  className="px-3.5 py-2.5 rounded-lg text-sm text-white placeholder-gray-600 outline-none transition"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
                 />
               </div>
-
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="password" className="text-sm font-medium text-gray-300">Password</label>
+                <label htmlFor="password" className="text-xs font-medium text-gray-400 uppercase tracking-wider">Password</label>
                 <div className="relative flex items-center">
                   <input
                     id="password"
@@ -110,7 +117,8 @@ function Login({ onLogin }) {
                     placeholder="Enter password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3.5 py-2.5 pr-10 border border-app rounded-lg text-sm bg-input text-white placeholder-gray-600 outline-none focus:border-blue-500 focus:bg-hover transition"
+                    className="w-full px-3.5 py-2.5 pr-10 rounded-lg text-sm text-white placeholder-gray-600 outline-none transition"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
                   />
                   <button
                     type="button"
@@ -122,21 +130,57 @@ function Login({ onLogin }) {
                   </button>
                 </div>
               </div>
-
               <button
                 type="submit"
-                className="mt-1 w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold rounded-lg text-sm transition cursor-pointer border-none"
+                className="mt-3 w-full py-2.5 text-white font-semibold rounded-lg text-sm transition cursor-pointer border-none"
+                style={{ background: 'linear-gradient(90deg, #2563eb, #1d4ed8)' }}
               >
                 Login
               </button>
             </form>
-
-            <a href="#" className="block text-center mt-4 text-sm text-blue-400 hover:text-blue-300 transition hover:underline">
+            <a href="#" className="block text-center mt-2 text-xs text-gray-500 hover:text-blue-400 transition hover:underline">
               Forgot Password?
             </a>
           </div>
-        </div>
+        )}
 
+        {/* About Content */}
+        {drawer === 'about' && (
+          <div className="flex-1 flex flex-col px-8 py-10 overflow-y-auto">
+            <p className="text-[10px] text-gray-600 tracking-[0.2em] uppercase mb-1">Who we are</p>
+            <h2 className="text-xl font-semibold text-white mb-6">CarGO Logistics Services</h2>
+            <p className="text-sm text-gray-400 leading-relaxed mb-4">
+              CarGO is a logistics management platform built to streamline freight operations, from load tendering and shipment tracking to EDI transmissions and invoicing.
+            </p>
+            <p className="text-sm text-gray-400 leading-relaxed mb-8">
+              Designed for logistics teams who need real-time visibility and seamless partner communication, all in one place.
+            </p>
+            <div className="mt-auto pt-6 space-y-3 text-xs" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="flex justify-between"><span className="text-gray-600">System</span><span className="text-gray-300">CarGO Logistics EDI</span></div>
+              <div className="flex justify-between"><span className="text-gray-600">Version</span><span className="text-gray-300">1.0.0</span></div>
+              <div className="flex justify-between"><span className="text-gray-600">Year</span><span className="text-gray-300">2026 CarGO Logistics Services</span></div>
+            </div>
+          </div>
+        )}
+        {/* Loading / Success Overlay */}
+        {loadingState && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center" style={{ background: 'rgba(10,14,26,0.92)', backdropFilter: 'blur(4px)' }}>
+            {loadingState === 'loading' && (
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-12 h-12 rounded-full border-4 border-white/10 border-t-blue-500 animate-spin" />
+                <p className="text-sm text-gray-400 tracking-widest uppercase">Signing in...</p>
+              </div>
+            )}
+            {loadingState === 'success' && (
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center">
+                  <Check size={28} className="text-green-400" strokeWidth={2.5} />
+                </div>
+                <p className="text-sm text-green-400 tracking-widest uppercase">Success</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

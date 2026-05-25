@@ -158,8 +158,11 @@ function Dashboard({ user, onLogout }) {
         {/* Brand — logo */}
         <div className="flex items-center border-b border-app overflow-hidden h-[72px] flex-shrink-0 px-2">
           <img src={logo} alt="CarGO Logo" className="h-10 w-10 object-contain flex-shrink-0" />
-          <span className="whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-150 text-xs font-bold tracking-widest text-app ml-2">
-            CARGO LOGISTICS
+          <span
+            className="whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 ml-2.5 text-sm font-bold tracking-wide"
+            style={{ fontFamily: "'Rajdhani', sans-serif", color: '#ffffff' }}
+          >
+            Car<span style={{ textTransform: 'uppercase' }}>GO</span> Logistics
           </span>
         </div>
 
