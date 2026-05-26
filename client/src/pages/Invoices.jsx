@@ -257,6 +257,7 @@ function Invoices() {
                 <th className="text-left px-5 py-2.5 font-medium">Partner</th>
                 <th className="text-left px-5 py-2.5 font-medium">Shipment</th>
                 <th className="text-left px-5 py-2.5 font-medium">Amount</th>
+                <th className="text-left px-5 py-2.5 font-medium">Created</th>
                 <th className="text-left px-5 py-2.5 font-medium">Due Date</th>
                 <th className="text-left px-5 py-2.5 font-medium">Status / 820</th>
                 <th className="text-right px-5 py-2.5 font-medium">Action</th>
@@ -269,6 +270,9 @@ function Invoices() {
                   <td className="px-5 py-3 text-sm text-app font-medium">{inv.partner?.name}</td>
                   <td className="px-5 py-3 text-xs text-gray-400 font-mono">{inv.shipment?.shipmentId}</td>
                   <td className="px-5 py-3 text-xs text-app font-semibold">{fmtAmt(inv.amount)}</td>
+                  <td className="px-5 py-3 text-xs text-gray-400">
+                    {inv.createdAt ? new Date(inv.createdAt).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                  </td>
                   <td className={`px-5 py-3 text-xs ${inv.status === 'Overdue' ? 'text-red-400 font-medium' : 'text-gray-500'}`}>
                     {fmtDate(inv.dueDate)}
                   </td>
@@ -291,7 +295,7 @@ function Invoices() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={7} className="text-center py-10 text-gray-600 text-sm">No invoices found.</td></tr>
+                <tr><td colSpan={8} className="text-center py-10 text-gray-600 text-sm">No invoices found.</td></tr>
               )}
             </tbody>
           </table>
@@ -319,6 +323,7 @@ function Invoices() {
               <div><p className="text-gray-500 mb-0.5">Partner</p><p className="text-app font-medium">{viewInvoice.partner?.name}</p></div>
               <div><p className="text-gray-500 mb-0.5">Shipment</p><p className="text-app font-mono">{viewInvoice.shipment?.shipmentId}</p></div>
               <div><p className="text-gray-500 mb-0.5">Amount</p><p className="text-app font-semibold">{fmtAmt(viewInvoice.amount)}</p></div>
+              <div><p className="text-gray-500 mb-0.5">Created</p><p className="text-app">{viewInvoice.createdAt ? new Date(viewInvoice.createdAt).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</p></div>
               <div><p className="text-gray-500 mb-0.5">Due Date</p><p className={viewInvoice.status === 'Overdue' ? 'text-red-400 font-medium' : 'text-app'}>{fmtDate(viewInvoice.dueDate)}</p></div>
               <div><p className="text-gray-500 mb-0.5">Status</p>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLE[viewInvoice.status]}`}>{viewInvoice.status}</span>
