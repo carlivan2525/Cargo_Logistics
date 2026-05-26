@@ -6,6 +6,7 @@ const invoiceSchema = new mongoose.Schema({
   shipment:  { type: mongoose.Schema.Types.ObjectId, ref: 'Shipment', required: true },
   amount:    { type: Number, required: true },
   taxAmount: { type: Number, default: 0 },
+  shippingFee: { type: Number, default: 60 },
   dueDate:   { type: Date, required: true },
   status:    { type: String, enum: ['Draft', 'Pending', 'Paid', 'Overdue'], default: 'Pending' },
   ediSent:    { type: Boolean, default: false },

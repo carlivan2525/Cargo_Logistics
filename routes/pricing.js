@@ -77,4 +77,55 @@ router.post('/calculate', auth, async (req, res) => {
   }
 });
 
+// POST public freight quote — no auth required (for partner customer-facing apps)
+// POST /api/pricing/quote
+// Body: { origin, destination, vehicleType? }
+router.post('/quote', async (req, res) => {
+  const { origin, destination, vehicleType } = req.body;
+  if (!origin || !destination) {
+    return res.status(400).json({ message: 'origin and destination are required' });
+  }
+  try {
+    await loadRateConfig();
+    const route = `${origin} - ${destination}`;
+
+    // If vehicleType provided, return single quote
+    if (vehicleType) {
+      const result = calculateFreight(route, vehicleType, rateConfig.ratePerKm, rateConfig.minCharge);
+      if (result.error) return res.status(422).json({ message: result.error });
+      return res.json({
+        origin:      result.origin,
+        destination: result.destination,
+        vehicleType,
+        distanceKm:  result.distanceKm,
+        ratePerKm:   result.ratePerKm,
+        totalAmount: result.amount,
+      });
+    }
+
+    // No vehicleType — return all
+    const vehicleTypes = Object.keys(rateConfig.ratePerKm);
+    const quotes = [];
+    for (const vt of vehicleTypes) {
+      const result = calculateFreight(route, vt, rateConfig.ratePerKm, rateConfig.minCharge);
+      if (!result.error) {
+        quotes.push({
+          vehicleType:  vt,
+          distanceKm:   result.distanceKm,
+          ratePerKm:    result.ratePerKm,
+          totalAmount:  result.amount,
+        });
+      }
+    }
+
+    if (quotes.length === 0) {
+      return res.status(422).json({ message: `Could not calculate route: ${origin} - ${destination}` });
+    }
+
+    res.json({ origin, destination, distanceKm: quotes[0].distanceKm, quotes });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;

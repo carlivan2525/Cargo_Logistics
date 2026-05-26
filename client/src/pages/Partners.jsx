@@ -6,6 +6,7 @@ const TYPE_STYLE = {
   'Retailer':     'bg-blue-500/20 text-blue-400',
   'Manufacturer': 'bg-purple-500/20 text-purple-400',
   'Supplier':     'bg-orange-500/20 text-orange-400',
+  'Customer':     'bg-green-500/20 text-green-400',
 };
 
 function Partners() {
@@ -50,7 +51,7 @@ function Partners() {
           <select value={filterType} onChange={e => setFilterType(e.target.value)}
             className="bg-input border border-app text-xs text-gray-300 rounded-lg px-2 py-1.5 outline-none cursor-pointer">
             <option value="All">All Types</option>
-            {['Retailer','Manufacturer','Supplier'].map(t => <option key={t} value={t}>{t}</option>)}
+            {['Retailer','Manufacturer','Supplier','Customer'].map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
       </div>

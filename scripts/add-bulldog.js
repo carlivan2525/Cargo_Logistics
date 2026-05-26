@@ -17,10 +17,10 @@ mongoose.connect(process.env.MONGO_URI).then(async () => {
       ediDocs:     ['204', '990', '214', '210'],
       apiEndpoint: '',
       endpoints: {
-        edi990:  'https://landlady-snap-booting.ngrok-free.dev/api/edi/logistics/receive-990',
-        edi214:  'https://landlady-snap-booting.ngrok-free.dev/api/edi/logistics/receive-214',
-        edi210:  'https://landlady-snap-booting.ngrok-free.dev/api/edi/logistics/receive-receipt',
-        invoice: 'https://landlady-snap-booting.ngrok-free.dev/api/edi/logistics/receive-210',
+        edi990:  process.env.EDI_BULLDOG_990,
+        edi214:  process.env.EDI_BULLDOG_214,
+        edi210:  process.env.EDI_BULLDOG_210,
+        invoice: process.env.EDI_BULLDOG_210,
       },
     },
     { upsert: true, new: true, runValidators: true }

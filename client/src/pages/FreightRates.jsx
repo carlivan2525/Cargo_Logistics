@@ -281,6 +281,10 @@ function FreightRates() {
                   <span className="text-xs text-gray-400">Estimated Cost</span>
                   <span className="text-xl font-bold text-green-400">{fmt(result.amount)}</span>
                 </div>
+                <div className="flex items-center justify-between text-xs text-gray-500 -mt-1">
+                  <span>Freight</span><span>{fmt(result.amount)}</span>
+                </div>
+
                 <div className="grid grid-cols-3 gap-2 pt-2 border-t border-green-500/20 text-center">
                   <div>
                     <p className="text-[10px] text-gray-500">Distance</p>

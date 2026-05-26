@@ -1,5 +1,7 @@
 const express = require('express');
 const PDFDocument = require('pdfkit');
+const path = require('path');
+const fs = require('fs');
 const Invoice = require('../models/Invoice');
 const Transmission = require('../models/Transmission');
 const Partner = require('../models/Partner');
@@ -13,61 +15,124 @@ const router = express.Router();
 function buildPdf(invoice, res) {
   const doc = new PDFDocument({ margin: 50, size: 'A4' });
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="${invoice.invoiceId}.pdf"`);
+  res.setHeader('Content-Disposition', `inline; filename="${invoice.invoiceId}.pdf"`);
   doc.pipe(res);
 
-  const fmt = n => `PHP ${Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
-  const fmtDate = d => d ? new Date(d).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) : '—';
+  const fmt     = n  => `PHP ${Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
+  const fmtDate = d  => d ? new Date(d).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) : '—';
+  const dash    = v  => (v && String(v).trim()) ? v : '—';
 
-  doc.fontSize(22).font('Helvetica-Bold').text('CarGO Logistics Services', 50, 50);
-  doc.fontSize(10).font('Helvetica').fillColor('#666').text('Freight Invoice', 50, 78);
+  const tender  = invoice.tender || {};
+  const origin  = tender.originAddress || {};
+  const vehicle = tender.assignedVehicle || {};
+
+  // ── Header ──────────────────────────────────────────────────────────────
+  // Logo
+  const logoPath = path.join(__dirname, '../client/public/CarGO-logo.png');
+  if (fs.existsSync(logoPath)) {
+    doc.image(logoPath, 50, 40, { width: 48 });
+  }
+  doc.fontSize(20).font('Helvetica-Bold').text('CarGO Logistics Services', 108, 45);
+  doc.fontSize(10).font('Helvetica').fillColor('#666').text('Official Freight Invoice', 108, 70);
 
   doc.fillColor('#000')
      .fontSize(10).font('Helvetica-Bold').text('INVOICE', 400, 50, { align: 'right' })
      .font('Helvetica').fontSize(9)
-     .text(`No: ${invoice.invoiceId}`, 400, 65, { align: 'right' })
-     .text(`Date: ${fmtDate(invoice.createdAt)}`, 400, 78, { align: 'right' })
-     .text(`Due: ${fmtDate(invoice.dueDate)}`, 400, 91, { align: 'right' });
+     .text(`No: ${invoice.invoiceId}`,          400, 65,  { align: 'right' })
+     .text(`Date: ${fmtDate(invoice.createdAt)}`, 400, 78,  { align: 'right' })
+     .text(`Due:  ${fmtDate(invoice.dueDate)}`,   400, 91,  { align: 'right' });
 
   doc.moveTo(50, 115).lineTo(545, 115).strokeColor('#ddd').stroke();
 
-  doc.fillColor('#000').fontSize(9).font('Helvetica-Bold').text('BILL TO', 50, 130);
-  doc.font('Helvetica').fontSize(10).text(invoice.partner?.name || '—', 50, 145);
+  // ── Bill To ─────────────────────────────────────────────────────────────
+  let y = 130;
+  doc.fillColor('#000').fontSize(9).font('Helvetica-Bold').text('BILL TO', 50, y);
+  doc.font('Helvetica').fontSize(10).text(dash(invoice.partner?.name), 50, y + 14);
 
-  doc.font('Helvetica-Bold').fontSize(9).fillColor('#666').text('SHIPMENT DETAILS', 300, 130);
-  doc.font('Helvetica').fontSize(10).fillColor('#000')
-     .text(`Shipment ID: ${invoice.shipment?.shipmentId || '—'}`, 300, 145)
-     .text(`Route: ${invoice.shipment?.route || '—'}`, 300, 160);
+  // ── Shipment / Tender Info ───────────────────────────────────────────────
+  doc.font('Helvetica-Bold').fontSize(9).fillColor('#666').text('SHIPMENT DETAILS', 300, y);
+  doc.font('Helvetica').fontSize(9).fillColor('#000')
+     .text(`Shipment ID : ${dash(invoice.shipment?.shipmentId)}`, 300, y + 14)
+     .text(`Route       : ${dash(invoice.shipment?.route)}`,      300, y + 26)
+     .text(`Order ID    : ${dash(tender.orderId)}`,               300, y + 38)
+     .text(`Tender ID   : ${dash(tender.tenderId)}`,              300, y + 50);
 
-  const tableTop = 210;
-  doc.rect(50, tableTop, 495, 22).fill('#1a1a2e');
+  y = 210;
+  doc.moveTo(50, y).lineTo(545, y).strokeColor('#eee').stroke();
+  y += 10;
+
+  // ── Origin Address ───────────────────────────────────────────────────────
+  doc.fontSize(9).font('Helvetica-Bold').fillColor('#444').text('PICKUP / ORIGIN', 50, y);
+  y += 13;
+  doc.font('Helvetica').fontSize(9).fillColor('#000')
+     .text(`Location  : ${dash(origin.locationName)}`, 50, y)
+     .text(`City      : ${dash(origin.city)}${origin.region ? ', ' + origin.region : ''}`, 50, y + 12)
+     .text(`ZIP       : ${dash(origin.zipCode)}`,      50, y + 24)
+     .text(`Contact   : ${dash(origin.contactPerson)}`, 50, y + 36)
+     .text(`Phone     : ${dash(origin.contactPhone)}`,  50, y + 48);
+
+  // ── Schedule ─────────────────────────────────────────────────────────────
+  doc.font('Helvetica-Bold').fontSize(9).fillColor('#444').text('SCHEDULE', 300, y);
+  y += 13;
+  doc.font('Helvetica').fontSize(9).fillColor('#000')
+     .text(`Pickup Date    : ${fmtDate(tender.pickupDate)}`,                           300, y)
+     .text(`Delivery Date  : ${fmtDate(invoice.actualDeliveryDate || tender.deliveryDate)}`, 300, y + 12);
+
+  y += 65;
+  doc.moveTo(50, y).lineTo(545, y).strokeColor('#eee').stroke();
+  y += 10;
+
+  // ── Load Details ─────────────────────────────────────────────────────────
+  doc.font('Helvetica-Bold').fontSize(9).fillColor('#444').text('LOAD DETAILS', 50, y);
+  y += 13;
+  doc.font('Helvetica').fontSize(9).fillColor('#000')
+     .text(`Commodity : ${dash(tender.commodity)}`, 50,  y)
+     .text(`Weight    : ${dash(tender.weight)}`,    50,  y + 12)
+     .text(`Carrier   : ${dash(tender.carrierName || tender.carrierId)}`, 50, y + 24)
+     .text(`SCAC      : ${dash(tender.carrierScac)}`, 50, y + 36);
+
+  // ── Assigned Vehicle ─────────────────────────────────────────────────────
+  doc.font('Helvetica-Bold').fontSize(9).fillColor('#444').text('ASSIGNED VEHICLE', 300, y);
+  y += 13;
+  doc.font('Helvetica').fontSize(9).fillColor('#000')
+     .text(`Vehicle   : ${dash(vehicle.name)}`,  300, y)
+     .text(`Type      : ${dash(vehicle.type)}`,  300, y + 12)
+     .text(`Plate     : ${dash(vehicle.plate)}`, 300, y + 24);
+
+  y += 55;
+  doc.moveTo(50, y).lineTo(545, y).strokeColor('#eee').stroke();
+  y += 10;
+
+  // ── Charges Table ────────────────────────────────────────────────────────
+  doc.rect(50, y, 495, 22).fill('#1a1a2e');
   doc.fillColor('#fff').fontSize(9).font('Helvetica-Bold')
-     .text('Description', 60, tableTop + 7)
-     .text('Amount', 480, tableTop + 7, { align: 'right', width: 55 });
+     .text('Description', 60, y + 7)
+     .text('Amount', 480, y + 7, { align: 'right', width: 55 });
 
-  const rowY = tableTop + 30;
+  y += 30;
   doc.fillColor('#000').font('Helvetica').fontSize(10)
-     .text(`Freight charges — ${invoice.shipment?.route || 'Shipment'}`, 60, rowY)
-     .text(fmt(invoice.amount), 480, rowY, { align: 'right', width: 55 });
+     .text(`Freight charges — ${invoice.shipment?.route || 'Shipment'}`, 60, y)
+     .text(fmt(invoice.amount || 0), 480, y, { align: 'right', width: 55 });
 
   if (invoice.taxAmount > 0) {
-    doc.text('Tax', 60, rowY + 20)
-       .text(fmt(invoice.taxAmount), 480, rowY + 20, { align: 'right', width: 55 });
+    y += 20;
+    doc.text('Tax', 60, y).text(fmt(invoice.taxAmount), 480, y, { align: 'right', width: 55 });
   }
 
-  const totalY = rowY + (invoice.taxAmount > 0 ? 55 : 35);
-  doc.moveTo(50, totalY).lineTo(545, totalY).strokeColor('#ddd').stroke();
+  y += 35;
+  doc.moveTo(50, y).lineTo(545, y).strokeColor('#ddd').stroke();
+  y += 10;
   doc.font('Helvetica-Bold').fontSize(12).fillColor('#000')
-     .text('TOTAL', 60, totalY + 10)
-     .text(fmt((invoice.amount || 0) + (invoice.taxAmount || 0)), 480, totalY + 10, { align: 'right', width: 55 });
+     .text('TOTAL', 60, y)
+     .text(fmt((invoice.amount || 0) + (invoice.taxAmount || 0)), 480, y, { align: 'right', width: 55 });
 
-  const statusY = totalY + 50;
-  doc.rect(50, statusY, 80, 22).fill(invoice.status === 'Paid' ? '#16a34a' : '#ca8a04');
+  y += 40;
+  doc.rect(50, y, 80, 22).fill(invoice.status === 'Paid' ? '#16a34a' : '#ca8a04');
   doc.fillColor('#fff').fontSize(10).font('Helvetica-Bold')
-     .text(invoice.status.toUpperCase(), 50, statusY + 6, { width: 80, align: 'center' });
+     .text(invoice.status.toUpperCase(), 50, y + 6, { width: 80, align: 'center' });
 
   doc.fillColor('#999').fontSize(8).font('Helvetica')
-     .text('Thank you for your business. For inquiries, contact CarGO Logistics Services.', 50, 720, { align: 'center', width: 495 });
+     .text('Thank you for your business. For inquiries, contact CarGO Logistics Services.', 50, 760, { align: 'center', width: 495 });
 
   doc.end();
 }
@@ -89,8 +154,10 @@ router.get('/pdf/:token', async (req, res) => {
   try {
     const invoice = await Invoice.findOne({ pdfToken: req.params.token })
       .populate('partner', 'name')
-      .populate('shipment', 'shipmentId route');
+      .populate({ path: 'shipment', populate: { path: 'tender', populate: { path: 'assignedVehicle', select: 'name type plate' } } });
     if (!invoice) return res.status(404).send('Invoice not found');
+    if (invoice.shipment?.tender) invoice.tender = invoice.shipment.tender;
+    invoice.actualDeliveryDate = invoice.shipment?.deliveredAt || null;
     buildPdf(invoice, res);
   } catch (err) {
     res.status(500).send(err.message);
@@ -102,8 +169,10 @@ router.get('/:id/pdf', auth, async (req, res) => {
   try {
     const invoice = await Invoice.findById(req.params.id)
       .populate('partner', 'name')
-      .populate('shipment', 'shipmentId route');
+      .populate({ path: 'shipment', populate: { path: 'tender', populate: { path: 'assignedVehicle', select: 'name type plate' } } });
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+    if (invoice.shipment?.tender) invoice.tender = invoice.shipment.tender;
+    invoice.actualDeliveryDate = invoice.shipment?.deliveredAt || null;
     buildPdf(invoice, res);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -232,10 +301,14 @@ router.post('/:id/send210', auth, async (req, res) => {
         'newforge':         process.env.EDI_NEWFORGE_997,
       };
 
-      const endpoint = partner?.endpoints?.edi210 || RECEIPT_WEBHOOKS[partnerName] || partner?.apiEndpoint;
+      const endpoint = partner?.endpoints?.edi997 || RECEIPT_WEBHOOKS[partnerName] || partner?.apiEndpoint;
       if (endpoint) {
         const payload = {
-          shipmentId: invoice.shipment.shipmentId,
+          shipmentId:  invoice.shipment.shipmentId,
+          invoiceId:   invoice.invoiceId,
+          totalAmount: invoice.amount,
+          dueDate:     invoice.dueDate ? new Date(invoice.dueDate).toISOString().slice(0, 10) : null,
+          status:      invoice.status,
           pdfUrl,
         };
         const response = await fetch(endpoint, {

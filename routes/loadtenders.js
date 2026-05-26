@@ -53,9 +53,7 @@ router.post('/', (req, res, next) => {
     }
 
     const pickupDate = parseDateInput(rawPickup);
-    const deliveryDate = parseDateInput(rawDelivery);
     if (!pickupDate) return res.status(400).json({ message: 'pickupDate is required (customer schedule)' });
-    if (!deliveryDate) return res.status(400).json({ message: 'deliveryDate or estimatedDeliveryDate is required' });
 
     const partner = await Partner.findOne({ isaId: isaId.toUpperCase() });
     if (!partner) {
@@ -93,7 +91,7 @@ router.post('/', (req, res, next) => {
       carrierName,
       carrierScac,
       pickupDate,
-      deliveryDate,
+      deliveryDate: parseDateInput(rawDelivery) || null,
       originAddress,
       weight: weight || '',
       commodity: commodity || '',
@@ -150,31 +148,39 @@ router.post('/:id/respond', auth, async (req, res) => {
         return res.status(400).json({ message: capacityCheck.message });
       }
 
-      if (!tender.pickupDate || !tender.deliveryDate) {
+      if (!tender.pickupDate) {
         const fallback = getPickupAndDeliveryDates();
-        if (!tender.pickupDate) tender.pickupDate = fallback.pickupDate;
-        if (!tender.deliveryDate) tender.deliveryDate = fallback.deliveryDate;
+        tender.pickupDate = fallback.pickupDate;
       }
+
+      // Compute estimatedDeliveryDate = pickupDate + 2 days
+      const pickup = new Date(tender.pickupDate);
+      const estDelivery = new Date(pickup);
+      estDelivery.setDate(pickup.getDate() + 2);
+      tender.estimatedDeliveryDate = estDelivery;
+      tender.deliveryDate = estDelivery; // keep deliveryDate in sync
+
       tender.status = status;
       tender.assignedVehicle = vehicleId;
 
       const o = tender.originAddress || {};
       const existingShipment = await Shipment.findOne({ shipmentId: tender.shipmentId });
       if (!existingShipment || existingShipment.status === 'Delivered') {
-        // Generate a unique shipmentId if the original is already taken by a delivered shipment
         const shipmentId = existingShipment ? `${tender.shipmentId}-${Date.now()}` : tender.shipmentId;
         await new Shipment({
           shipmentId,
-          route:       tender.route,
-          origin:      o.city || '',
-          partner:     tender.partner,
-          vehicle:     vehicleId,
-          tender:      tender._id,
-          status:      'Pending',
+          route:                 tender.route,
+          origin:                o.city || '',
+          partner:               tender.partner,
+          vehicle:               vehicleId,
+          tender:                tender._id,
+          status:                'Pending',
+          estimatedDeliveryDate: estDelivery,
         }).save();
       } else {
         existingShipment.vehicle = vehicleId;
         existingShipment.tender  = tender._id;
+        existingShipment.estimatedDeliveryDate = estDelivery;
         await existingShipment.save();
       }
     } else if (status === 'Rejected') {
@@ -205,9 +211,14 @@ router.post('/:id/respond', auth, async (req, res) => {
     const vehicle990 = status === 'Accepted' ? await require('../models/Vehicle').findById(vehicleId) : null;
 
     const edi990Payload = {
-      orderId: tender.orderId || tender.shipmentId,
+      orderId:    tender.orderId || tender.shipmentId,
       shipmentId: tender.shipmentId,
-      status:  status.toUpperCase(),
+      status:     status.toUpperCase(),
+      ...(status === 'Accepted' ? {
+        estimatedDeliveryDate: tender.estimatedDeliveryDate
+          ? new Date(tender.estimatedDeliveryDate).toISOString().slice(0, 10)
+          : null,
+      } : {}),
       ...(status === 'Accepted' && vehicle990 ? {
         assignedVehicle: {
           vehicleId: vehicle990.vehicleId || '',

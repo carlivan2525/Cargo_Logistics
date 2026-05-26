@@ -195,9 +195,12 @@ function generateX12_204(tender) {
 
 function get990Json(tender) {
   const base = {
-    orderId:    tender.orderId    || tender.shipmentId,
-    shipmentId: tender.shipmentId || '',
-    status:     tender.status?.toUpperCase(),
+    orderId:     tender.orderId    || tender.shipmentId,
+    shipmentId:  tender.shipmentId || '',
+    status:      tender.status?.toUpperCase(),
+    ...(tender.status === 'Accepted' && tender.estimatedDeliveryDate ? {
+      estimatedDeliveryDate: new Date(tender.estimatedDeliveryDate).toISOString().slice(0, 10),
+    } : {}),
   };
   if (tender.status === 'Accepted' && tender.assignedVehicle) {
     base.assignedVehicle = {
@@ -233,6 +236,10 @@ function generateX12_990(tender) {
     accepted && v ? `N1*CA*${v.name ?? ''}*ZZ*CRGO` : null,
     accepted && v ? `L11*${v.vehicleId ?? ''}*VH` : null,
     accepted && v ? `L11*${v.plate ?? ''}*LP` : null,
+    accepted ? `AMT*SF*60` : null,
+    accepted && tender.estimatedDeliveryDate
+      ? `G62*68*${new Date(tender.estimatedDeliveryDate).toISOString().slice(0,10).replace(/-/g,'')}`
+      : null,
     !accepted && tender.rejectNotes ? `NTE*OTH*${tender.rejectNotes}` : null,
   ].filter(Boolean);
 

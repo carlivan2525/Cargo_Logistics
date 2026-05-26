@@ -43,6 +43,9 @@ function generateX12_214(s) {
     `N1*CN*${isaId}*ZZ*${isaId}`,
     `AT7*${mappedStatus}*NS**${today}*${time}*LT`,
     location ? `MS2*CRGO*${location}` : null,
+    s.estimatedDeliveryDate
+      ? `G62*68*${new Date(s.estimatedDeliveryDate).toISOString().slice(0,10).replace(/-/g,'')}`
+      : null,
     desc     ? `NTE*OTH*${desc}`      : null,
     `SE*${desc ? (location ? 10 : 9) : (location ? 9 : 8)}*0001`,
     `GE*1*1`,
@@ -60,6 +63,9 @@ function getJson214(s) {
     status:      STATUS_MAP[s.status] ?? s.status,
     location,
     description: DESC_MAP[s.status] ?? '',
+    ...(s.estimatedDeliveryDate ? {
+      estimatedDeliveryDate: new Date(s.estimatedDeliveryDate).toISOString().slice(0, 10),
+    } : {}),
   };
 }
 
@@ -308,6 +314,7 @@ function ShipmentsTable() {
                 <th className="text-left px-5 py-2.5 font-medium">Shipment ID</th>
                 <th className="text-left px-5 py-2.5 font-medium">Date</th>
                 <th className="text-left px-5 py-2.5 font-medium">Route</th>
+                <th className="text-left px-5 py-2.5 font-medium">Est. Delivery</th>
                 <th className="text-left px-5 py-2.5 font-medium">Milestone</th>
                 <th className="text-left px-5 py-2.5 font-medium">Status</th>
                 <th className="text-left px-5 py-2.5 font-medium">EDI 214</th>
@@ -316,7 +323,7 @@ function ShipmentsTable() {
             </thead>
             <tbody>
               {shipments.length === 0 && (
-                <tr><td colSpan={7} className="text-center py-10 text-gray-600 text-sm">No shipments yet.</td></tr>
+                <tr><td colSpan={8} className="text-center py-10 text-gray-600 text-sm">No shipments yet.</td></tr>
               )}
               {shipments.filter(s =>
                 !search.trim() || (s.shipmentId ?? '').toLowerCase().includes(search.trim().toLowerCase())
@@ -329,6 +336,11 @@ function ShipmentsTable() {
                   <td className="px-5 py-3.5">
                     <p className="text-xs font-medium text-app">{s.route}</p>
                     <p className="text-xs text-gray-500">{s.partner?.name}</p>
+                  </td>
+                  <td className="px-5 py-3.5 text-xs text-gray-400">
+                    {s.estimatedDeliveryDate
+                      ? new Date(s.estimatedDeliveryDate).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : '—'}
                   </td>
                   <td className="px-5 py-3.5"><MilestoneTracker status={s.status} onViewEdi={(milestoneStatus) => {
                     setViewMode('x12');

@@ -14,6 +14,8 @@ const shipmentSchema = new mongoose.Schema({
     default: 'Pending',
   },
   edi214Sent: { type: Boolean, default: false },
+  deliveredAt: { type: Date, default: null },
+  estimatedDeliveryDate: { type: Date, default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Shipment', shipmentSchema);

@@ -21,6 +21,7 @@ const loadTenderSchema = new mongoose.Schema({
   carrierScac:     { type: String, default: '' },
   pickupDate:      { type: Date, default: null },
   deliveryDate:    { type: Date, default: null },
+  estimatedDeliveryDate: { type: Date, default: null },
   originAddress:   { type: originAddressSchema, default: () => ({}) },
   weight:          { type: String, default: '' },
   commodity:       { type: String, default: '' },

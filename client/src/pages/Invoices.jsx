@@ -106,7 +106,8 @@ function getJson210(inv) {
     shipmentId:  inv.shipment?.shipmentId ?? '',
     invoiceId:   inv.invoiceId,
     totalAmount: inv.amount,
-    status:      'Pending',
+    dueDate:     inv.dueDate ? new Date(inv.dueDate).toISOString().slice(0, 10) : null,
+    status:      inv.status ?? 'Pending',
   };
 }
 
@@ -167,16 +168,15 @@ function Invoices() {
     });
   };
 
-  const downloadPdf = (inv) => {    const token = localStorage.getItem('token');
+  const downloadPdf = (inv) => {
+    const token = localStorage.getItem('token');
     const base  = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
     fetch(`${base}/invoices/${inv._id}/pdf`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.blob())
       .then(blob => {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `${inv.invoiceId}.pdf`;
-        a.click();
-        URL.revokeObjectURL(a.href);
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
       })
       .catch(err => alert(err.message));
   };
@@ -347,7 +347,7 @@ function Invoices() {
             {viewInvoice.status === 'Paid' && (
               <button onClick={() => { downloadPdf(viewInvoice); }}
                 className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition cursor-pointer border-none">
-                <Download size={11} /> PDF
+                <Download size={11} /> View PDF
               </button>
             )}
             {viewInvoice.status === 'Paid' && (

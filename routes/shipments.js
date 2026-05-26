@@ -60,6 +60,10 @@ router.put('/:id/status', auth, async (req, res) => {
 
     shipment.status = status;
 
+    if (status === 'Delivered') {
+      shipment.deliveredAt = new Date();
+    }
+
     if (EDI_214_STATUSES.includes(status)) {
       shipment.edi214Sent = true;
       const trxId = await nextSequentialId(Transmission, 'transmissionId', 'TRX');
@@ -137,19 +141,25 @@ router.put('/:id/status', auth, async (req, res) => {
           // vendor endpoint expects a different payload format
           const body = webhookUrl === SURPLUS_VENDOR_URL
             ? JSON.stringify({
-                transactionSetCode: '214',
-                orderId:            tenderOrderId || shipment.transactionId || shipment.shipmentId,
-                status:             mappedStatus,
+                transactionSetCode:    '214',
+                orderId:               tenderOrderId || shipment.transactionId || shipment.shipmentId,
+                status:                mappedStatus,
                 location,
-                description:        DESCRIPTION_MAP[status] || '',
-                message:            `Shipment ${shipment.shipmentId} is now ${status}`,
+                description:           DESCRIPTION_MAP[status] || '',
+                message:               `Shipment ${shipment.shipmentId} is now ${status}`,
+                estimatedDeliveryDate: shipment.estimatedDeliveryDate
+                  ? new Date(shipment.estimatedDeliveryDate).toISOString().slice(0, 10)
+                  : null,
               })
             : webhookUrl === HIRAYA_VENDOR_URL
             ? JSON.stringify({
-                orderId:     tenderOrderId || shipment.transactionId || shipment.shipmentId,
-                status:      mappedStatus,
+                orderId:               tenderOrderId || shipment.transactionId || shipment.shipmentId,
+                status:                mappedStatus,
                 location,
-                description: DESCRIPTION_MAP[status] || '',
+                description:           DESCRIPTION_MAP[status] || '',
+                estimatedDeliveryDate: shipment.estimatedDeliveryDate
+                  ? new Date(shipment.estimatedDeliveryDate).toISOString().slice(0, 10)
+                  : null,
               })
             : JSON.stringify(payload214);
 
@@ -200,9 +210,10 @@ router.put('/:id/status', auth, async (req, res) => {
         dueDate.setDate(dueDate.getDate() + 30);
         const invoice = await new Invoice({
           invoiceId,
-          partner:  shipment.partner,
-          shipment: shipment._id,
+          partner:     shipment.partner,
+          shipment:    shipment._id,
           amount,
+          shippingFee: 0,
           dueDate,
           status:   'Pending',
           pdfToken,
