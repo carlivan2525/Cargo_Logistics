@@ -120,10 +120,19 @@ function calculateFreight(route, vehicleType, customRatePerKm, customMinCharge) 
   const rates    = customRatePerKm || RATE_PER_KM;
   const minimums = customMinCharge  || MIN_CHARGE;
 
+  // Case-insensitive key match in case DB keys differ in casing
+  const resolveKey = (obj, key) => {
+    if (obj[key] !== undefined) return key;
+    const lower = key.toLowerCase();
+    return Object.keys(obj).find(k => k.toLowerCase() === lower) ?? null;
+  };
+
   const straightKm = haversineKm(originCoords.lat, originCoords.lng, destCoords.lat, destCoords.lng);
   const distanceKm = Math.round(straightKm * ROAD_FACTOR);
-  const ratePerKm  = rates[vehicleType]    ?? rates.L300;
-  const minCharge  = minimums[vehicleType] ?? minimums.L300;
+  const rateKey    = resolveKey(rates, vehicleType);
+  const minKey     = resolveKey(minimums, vehicleType);
+  const ratePerKm  = rateKey  ? rates[rateKey]     : rates.L300;
+  const minCharge  = minKey   ? minimums[minKey]   : minimums.L300;
   const computed   = Math.round(distanceKm * ratePerKm);
   const amount     = Math.max(computed, minCharge);
 
