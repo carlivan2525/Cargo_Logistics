@@ -1,5 +1,6 @@
 import { X, Truck, CheckCircle2 } from 'lucide-react';
 import { canVehicleCarryLoad } from '../utils/capacity';
+import { api } from '../api';
 
 const VEHICLE_TYPE_STYLE = {
   'L300':             'bg-blue-500/20 text-blue-400',
@@ -61,7 +62,7 @@ export default function VehiclePickerModal({ vehicles, selected, loadWeight, onS
                     {/* Vehicle image */}
                     <div className="w-full h-28 bg-black/30 flex items-center justify-center overflow-hidden">
                       {v.image ? (
-                        <img src={v.image} alt={v.name} className="w-full h-full object-contain p-2" />
+                        <img src={api.imageUrl(v.image)} alt={v.name} className="w-full h-full object-contain p-2" />
                       ) : (
                         <Truck size={36} className="text-gray-700" />
                       )}

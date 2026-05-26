@@ -149,26 +149,39 @@ function VehicleImageManager() {
   };
 
   const handleFile = async (vehicle, file, withRemoveBg) => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      let imageData = e.target.result;
-      setUploading(vehicle._id);
-      try {
-        if (withRemoveBg) {
-          setRemoving(vehicle._id);
-          imageData = await removeBg(imageData);
-          setRemoving(null);
-        }
-        await api.put(`/vehicles/${vehicle._id}/image`, { image: imageData });
-        setVehicles(vs => vs.map(v => v._id === vehicle._id ? { ...v, image: imageData } : v));
-      } catch (err) {
-        alert(err.message);
-      } finally {
-        setUploading(null);
+    setUploading(vehicle._id);
+    try {
+      let uploadFile = file;
+
+      if (withRemoveBg) {
+        // Read as Base64 data URL, strip background, then convert result back to a Blob
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload  = e => resolve(e.target.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        setRemoving(vehicle._id);
+        const processedDataUrl = await removeBg(dataUrl);
         setRemoving(null);
+        // Convert the processed Base64 data URL → Blob → File
+        const res  = await fetch(processedDataUrl);
+        const blob = await res.blob();
+        uploadFile = new File([blob], file.name.replace(/\.[^.]+$/, '.png'), { type: 'image/png' });
       }
-    };
-    reader.readAsDataURL(file);
+
+      // Send as multipart/form-data
+      const form = new FormData();
+      form.append('image', uploadFile);
+
+      const { image: imageUrl } = await api.upload(`/vehicles/${vehicle._id}/image`, form);
+      setVehicles(vs => vs.map(v => v._id === vehicle._id ? { ...v, image: imageUrl } : v));
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setUploading(null);
+      setRemoving(null);
+    }
   };
 
   return (
@@ -192,7 +205,7 @@ function VehicleImageManager() {
             {/* Image preview */}
             <div className="h-28 bg-black/30 flex items-center justify-center">
               {v.image
-                ? <img src={v.image} alt={v.name} className="w-full h-full object-contain p-2" />
+                ? <img src={api.imageUrl(v.image)} alt={v.name} className="w-full h-full object-contain p-2" />
                 : <Truck size={32} className="text-gray-700" />}
             </div>
             {/* Info */}
