@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Inbox, Truck, CheckCircle2, XCircle, Clock, ChevronDown, ChevronLeft, ChevronRight, Copy, ClipboardCheck } from 'lucide-react';
+import { Inbox, Truck, CheckCircle2, XCircle, Clock, ChevronLeft, ChevronRight, Copy, ClipboardCheck } from 'lucide-react';
 import { api } from '../api';
 import { canVehicleCarryLoad } from '../utils/capacity';
 import { useToast } from '../components/Toast';
 import { usePolling } from '../hooks/usePolling';
+import VehiclePickerModal from '../components/VehiclePickerModal';
 
 const VEHICLE_TYPE_STYLE = {
   'L300':       'bg-blue-500/20 text-blue-400',
@@ -56,46 +57,31 @@ function VehicleDropdown({ value, onChange, vehicles, loadWeight }) {
   const selected = vehicles.find(v => v._id === value);
 
   return (
-    <div className="relative">
+    <>
       <button
         type="button"
-        onClick={() => setOpen(o => !o)}
+        onClick={() => setOpen(true)}
         className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-hover border border-app text-gray-300 hover:bg-white/15 transition cursor-pointer min-w-[180px] justify-between"
       >
         <span className="flex items-center gap-1.5">
-          <Truck size={11} className="text-gray-500" />
+          {selected?.image
+            ? <img src={selected.image} alt={selected.name} className="w-5 h-5 object-contain rounded" />
+            : <Truck size={11} className="text-gray-500" />}
           {selected ? `${selected.name} · ${selected.plate}` : 'Assign vehicle...'}
         </span>
-        <ChevronDown size={10} />
+        <span className="text-[10px] text-gray-500">▾</span>
       </button>
+
       {open && (
-        <div className="absolute left-0 top-9 z-30 bg-elevated border border-app rounded-lg shadow-xl overflow-hidden w-64">
-          {vehicles.map(v => {
-            const check = canVehicleCarryLoad(v, loadWeight);
-            return (
-              <button
-                key={v._id}
-                type="button"
-                onClick={() => { if (check.ok) { onChange(v._id); setOpen(false); } }}
-                disabled={!check.ok}
-                className={`w-full text-left px-3 py-2.5 text-xs transition border-none flex items-center justify-between
-                  ${!check.ok ? 'opacity-50 cursor-not-allowed bg-red-500/5 text-red-300' : 'hover:bg-hover cursor-pointer text-gray-300'}
-                  ${value === v._id && check.ok ? 'bg-blue-500/10 text-blue-400' : ''}`}
-              >
-                <span className="flex items-center gap-2">
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${VEHICLE_TYPE_STYLE[v.type]}`}>{v.type}</span>
-                  <span>{v.name} · {v.plate}</span>
-                </span>
-                <span className={check.ok ? 'text-gray-500' : 'text-red-400'}>{v.capacity}</span>
-              </button>
-            );
-          })}
-          {vehicles.length === 0 && (
-            <p className="text-xs text-gray-600 px-3 py-3">No vehicles in fleet</p>
-          )}
-        </div>
+        <VehiclePickerModal
+          vehicles={vehicles}
+          selected={value}
+          loadWeight={loadWeight}
+          onSelect={onChange}
+          onClose={() => setOpen(false)}
+        />
       )}
-    </div>
+    </>
   );
 }
 

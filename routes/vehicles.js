@@ -24,10 +24,21 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// PUT update status
+// PUT update status / fields
 router.put('/:id', auth, async (req, res) => {
   try {
     res.json(await Vehicle.findByIdAndUpdate(req.params.id, req.body, { new: true }));
+  } catch { res.status(500).json({ message: 'Server error' }); }
+});
+
+// PUT upload vehicle image (base64)
+router.put('/:id/image', auth, async (req, res) => {
+  try {
+    const { image } = req.body; // base64 data URL
+    if (!image) return res.status(400).json({ message: 'image is required' });
+    const vehicle = await Vehicle.findByIdAndUpdate(req.params.id, { image }, { new: true });
+    if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
+    res.json({ image: vehicle.image });
   } catch { res.status(500).json({ message: 'Server error' }); }
 });
 

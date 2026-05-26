@@ -11,6 +11,7 @@ const vehicleSchema = new mongoose.Schema({
   plate:     { type: String, required: true, unique: true },
   capacity:  { type: String, required: true },
   status:    { type: String, enum: ['Available', 'In Use', 'Maintenance'], default: 'Available' },
+  image:     { type: String, default: null }, // base64 data URL
 }, { timestamps: true });
 
 module.exports = mongoose.model('Vehicle', vehicleSchema);

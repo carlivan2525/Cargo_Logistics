@@ -62,6 +62,26 @@ router.post('/', (req, res, next) => {
       return res.status(400).json({ message: `Partner not found for isaId: ${isaId}` });
     }
 
+    // Idempotency check — reject duplicate tenders from same partner
+    // within 5 minutes with the same orderId or shipmentId
+    const tenSecondsAgo = new Date(Date.now() - 10 * 1000);
+    const dupQuery = {
+      partner: partner._id,
+      status: 'Pending',
+      createdAt: { $gte: tenSecondsAgo },
+    };
+    if (orderId) dupQuery.orderId = orderId;
+    else if (bodyShipmentId) dupQuery.shipmentId = bodyShipmentId;
+    else dupQuery.route = finalRoute;
+
+    const duplicate = await LoadTender.findOne(dupQuery);
+    if (duplicate) {
+      return res.status(409).json({
+        message: 'Duplicate load tender — a pending tender from this partner already exists.',
+        tenderId: duplicate.tenderId,
+      });
+    }
+
     const tender = new LoadTender({
       tenderId,
       ediRef: trxId,

@@ -72,6 +72,29 @@ const SLUG_TO_LABEL = {
 };
 const LABEL_TO_SLUG = Object.fromEntries(Object.entries(SLUG_TO_LABEL).map(([k,v]) => [v, k]));
 
+function LogoutButton({ onLogout }) {
+  const [loading, setLoading] = useState(false);
+  const handle = () => {
+    setLoading(true);
+    setTimeout(() => { setLoading(false); onLogout(); }, 3000);
+  };
+  return (
+    <button
+      onClick={handle}
+      disabled={loading}
+      title="Logout"
+      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition cursor-pointer border-none text-red-400 hover:bg-red-500/10 disabled:opacity-70"
+    >
+      {loading
+        ? <span className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+        : <LogOut size={15} className="flex-shrink-0" />}
+      <span className="whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
+        {loading ? 'Logging out...' : 'Logout'}
+      </span>
+    </button>
+  );
+}
+
 function Dashboard({ user, onLogout }) {
   const { setTheme, isDark } = useTheme();
   const navigate = useNavigate();
@@ -204,9 +227,14 @@ function Dashboard({ user, onLogout }) {
           ))}
         </nav>
 
+        {/* Logout — above footer line */}
+        <div className="px-1.5 pb-2">
+          <LogoutButton onLogout={onLogout} />
+        </div>
+
         {/* Footer */}
-        <div className="px-2 py-3 border-t border-app text-center overflow-hidden">
-          <p className="text-[10px] text-gray-600 whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
+        <div className="px-2 py-3 border-t border-app overflow-hidden">
+          <p className="text-[10px] text-gray-600 whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 text-center">
             © 2026 CarGO Logistics Services
           </p>
         </div>
