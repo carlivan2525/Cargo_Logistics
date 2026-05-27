@@ -2,7 +2,7 @@ const express  = require('express');
 const path     = require('path');
 const fs       = require('fs');
 const multer   = require('multer');
-const { put, del, getDownloadUrl } = require('@vercel/blob');
+const { put, del } = require('@vercel/blob');
 const Vehicle  = require('../models/Vehicle');
 const auth     = require('../middleware/auth');
 
@@ -40,19 +40,6 @@ function isVercelBlobUrl(url) {
     && url.includes('blob.vercel-storage.com');
 }
 
-async function resolveImageForClient(image) {
-  if (!image || typeof image !== 'string') return image;
-  if (!isVercelBlobUrl(image)) return image;
-
-  try {
-    const signedUrl = await getDownloadUrl(image, { token: process.env.BLOB_READ_WRITE_TOKEN });
-    return signedUrl || image;
-  } catch (err) {
-    console.warn('Blob signed URL failed, using raw URL:', err.message);
-    return image;
-  }
-}
-
 async function removeStoredImage(image) {
   if (!image || typeof image !== 'string') return;
 
@@ -82,14 +69,7 @@ async function removeStoredImage(image) {
 // GET all
 router.get('/', auth, async (req, res) => {
   try {
-    const vehicles = await Vehicle.find().sort({ createdAt: -1 }).lean();
-    const withDisplayImage = await Promise.all(
-      vehicles.map(async (v) => ({
-        ...v,
-        image: await resolveImageForClient(v.image),
-      }))
-    );
-    res.json(withDisplayImage);
+    res.json(await Vehicle.find().sort({ createdAt: -1 }));
   } catch {
     res.status(500).json({ message: 'Server error' });
   }
@@ -141,7 +121,7 @@ router.put('/:id/image', auth, upload.single('image'), async (req, res) => {
     if (useBlobStorage()) {
       const pathname = `vehicles/${req.params.id}-${Date.now()}${ext}`;
       const blob = await put(pathname, req.file.buffer, {
-        access: 'private',
+        access: 'public',
         token: process.env.BLOB_READ_WRITE_TOKEN,
         contentType: req.file.mimetype || 'image/png',
         addRandomSuffix: true,
@@ -163,7 +143,7 @@ router.put('/:id/image', auth, upload.single('image'), async (req, res) => {
       { new: true }
     );
 
-    res.json({ image: await resolveImageForClient(updated.image) });
+    res.json({ image: updated.image });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
