@@ -101,6 +101,7 @@ function Dashboard({ user, onLogout }) {
   const location = useLocation();
   const { show: showToast, node: toastNode } = useToast();
   const prevTenderCountRef = useRef(null);
+  const prevPaidInvoiceIdsRef = useRef(new Set());
 
   // derive active nav from URL
   const slug = location.pathname.replace(/^\/dashboard\/?/, '');
@@ -148,6 +149,21 @@ function Dashboard({ user, onLogout }) {
         showToast(`${diff} new EDI 204 load tender${diff > 1 ? 's' : ''} received.`, 'info');
       }
       prevTenderCountRef.current = tenders.length;
+
+      // global 820 payment toast — fires when an invoice flips to Paid
+      const paidNow = new Set((invoices || []).filter(i => i.status === 'Paid').map(i => i.invoiceId));
+      const prev = prevPaidInvoiceIdsRef.current;
+      if (prev.size > 0) {
+        const newlyPaid = [];
+        for (const id of paidNow) if (!prev.has(id)) newlyPaid.push(id);
+        if (newlyPaid.length > 0) {
+          const msg = newlyPaid.length === 1
+            ? `Payment received — ${newlyPaid[0]} marked Paid (EDI 820).`
+            : `Payments received — ${newlyPaid.length} invoices marked Paid (EDI 820).`;
+          showToast(msg, 'success');
+        }
+      }
+      prevPaidInvoiceIdsRef.current = paidNow;
     }).catch(() => {});
   };
 

@@ -64,8 +64,6 @@ function Partners() {
               <th className="text-left px-5 py-2.5 font-medium">Name</th>
               <th className="text-left px-5 py-2.5 font-medium">Type</th>
               <th className="text-left px-5 py-2.5 font-medium">ISA ID</th>
-              <th className="text-left px-5 py-2.5 font-medium">Protocol</th>
-              <th className="text-left px-5 py-2.5 font-medium">EDI Docs</th>
               <th className="text-left px-5 py-2.5 font-medium">Status</th>
             </tr>
           </thead>
@@ -78,14 +76,6 @@ function Partners() {
                   <span className={`text-xs px-2 py-0.5 rounded-full ${TYPE_STYLE[p.type]}`}>{p.type}</span>
                 </td>
                 <td className="px-5 py-3 font-mono text-xs text-gray-400">{p.isaId}</td>
-                <td className="px-5 py-3 text-xs text-gray-300">{p.protocol}</td>
-                <td className="px-5 py-3">
-                  <div className="flex flex-wrap gap-1">
-                    {p.ediDocs.map(d => (
-                      <span key={d} className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-gray-300 font-mono">{d}</span>
-                    ))}
-                  </div>
-                </td>
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-1.5">
                     {p.status === 'Active'
@@ -97,7 +87,7 @@ function Partners() {
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={7} className="text-center py-10 text-gray-600 text-sm">No partners found.</td></tr>
+              <tr><td colSpan={5} className="text-center py-10 text-gray-600 text-sm">No partners found.</td></tr>
             )}
           </tbody>
         </table>

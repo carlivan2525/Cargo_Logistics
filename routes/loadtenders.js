@@ -3,11 +3,14 @@ const LoadTender = require('../models/LoadTender');
 const Partner = require('../models/Partner');
 const Transmission = require('../models/Transmission');
 const Shipment = require('../models/Shipment');
+const Invoice = require('../models/Invoice');
 const Vehicle = require('../models/Vehicle');
 const auth = require('../middleware/auth');
 const { getPickupAndDeliveryDates, parseDateInput } = require('../utils/dates');
 const { canVehicleCarryLoad } = require('../utils/capacity');
 const { normalizeCustomer204, buildRoute } = require('../utils/normalize204');
+const { calculateFreight } = require('../utils/pricing');
+const { loadRateConfig, rateConfig } = require('../utils/rateConfig');
 const { nextSequentialId } = require('../utils/ids');
 const router = express.Router();
 
@@ -118,7 +121,205 @@ router.post('/', (req, res, next) => {
   }
 });
 
-// GET one — full 204 detail for modal
+function buildEdiPipeline(tender, shipment, invoice, transmissions, invoicePdfUrl = null) {
+  const rejected = tender.status === 'Rejected';
+  const accepted = tender.status === 'Accepted';
+  const pending = tender.status === 'Pending';
+
+  const statusRank = { Pending: 0, Pickup: 1, 'In Transit': 2, Delivered: 3 };
+  const shipRank = shipment ? (statusRank[shipment.status] ?? -1) : -1;
+
+  const trx204 = transmissions.find(t => t.ediCode === '204' && t.transmissionId === tender.ediRef)
+    || transmissions.find(t => t.ediCode === '204');
+  const trx990 = transmissions.find(t => t.ediCode === '990');
+  const trx214 = (label) => transmissions.find(t =>
+    t.ediCode === '214' && (!label || (t.label || '').includes(label))
+  );
+  const trx210 = transmissions.find(t => t.ediCode === '210');
+  const trx820 = transmissions.find(t => t.ediCode === '820');
+  const trx997 = transmissions.find(t => t.ediCode === '997');
+
+  const fmtAt = (d) => (d ? new Date(d).toISOString() : null);
+
+  const steps = [
+    {
+      key: '204',
+      code: '204',
+      label: 'Load Tender',
+      detail: 'Inbound request',
+      state: 'done',
+      at: fmtAt(trx204?.createdAt || tender.createdAt),
+      ref: tender.ediRef || trx204?.transmissionId || null,
+    },
+    {
+      key: '990',
+      code: '990',
+      label: 'Response',
+      detail: rejected ? 'Rejected' : accepted ? 'Accepted' : 'Awaiting acknowledge',
+      state: rejected ? 'rejected' : accepted ? 'done' : pending ? 'current' : 'pending',
+      at: !pending ? fmtAt(trx990?.createdAt || tender.updatedAt) : null,
+      ref: trx990?.transmissionId || null,
+    },
+  ];
+
+  const after990 = [
+    {
+      key: '214-pickup',
+      code: '214',
+      label: 'Pickup',
+      detail: 'Shipment status update',
+      done: shipRank >= 1,
+      trx: trx214('Pickup'),
+    },
+    {
+      key: '214-transit',
+      code: '214',
+      label: 'In Transit',
+      detail: 'Shipment status update',
+      done: shipRank >= 2,
+      trx: trx214('In Transit'),
+    },
+    {
+      key: '214-delivered',
+      code: '214',
+      label: 'Delivered',
+      detail: 'Shipment status update',
+      done: shipRank >= 3,
+      trx: trx214('Delivered'),
+    },
+    {
+      key: '210',
+      code: '210',
+      label: 'Invoice',
+      detail: invoice ? `Freight bill · ${invoice.invoiceId}` : 'Freight bill',
+      done: Boolean(invoice && (invoice.ediSent || trx210)),
+      trx: trx210,
+    },
+    {
+      key: '820',
+      code: '820',
+      label: 'Payment',
+      detail: 'Remittance advice',
+      done: invoice?.status === 'Paid' || Boolean(trx820),
+      trx: trx820,
+    },
+    {
+      key: '997',
+      code: '997',
+      label: 'Receipt',
+      detail: 'Functional acknowledgement',
+      done: Boolean(invoice?.edi997Sent || trx997),
+      trx: trx997,
+    },
+  ];
+
+  if (rejected) {
+    for (const s of after990) {
+      steps.push({
+        key: s.key,
+        code: s.code,
+        label: s.label,
+        detail: s.detail,
+        state: 'skipped',
+        at: null,
+        ref: null,
+      });
+    }
+    return {
+      steps,
+      shipment: shipment ? { shipmentId: shipment.shipmentId, status: shipment.status, route: shipment.route, estimatedDeliveryDate: shipment.estimatedDeliveryDate } : null,
+      invoice: null,
+    };
+  }
+
+  if (!accepted) {
+    for (const s of after990) {
+      steps.push({
+        key: s.key,
+        code: s.code,
+        label: s.label,
+        detail: s.detail,
+        state: 'pending',
+        at: null,
+        ref: null,
+      });
+    }
+    return { steps, shipment: null, invoice: null };
+  }
+
+  let foundCurrent = false;
+  for (const s of after990) {
+    let state = 'pending';
+    if (s.done) {
+      state = 'done';
+    } else if (!foundCurrent) {
+      state = 'current';
+      foundCurrent = true;
+    }
+    steps.push({
+      key: s.key,
+      code: s.code,
+      label: s.label,
+      detail: s.detail,
+      state,
+      at: fmtAt(s.trx?.createdAt || (s.key === '214-delivered' && shipment?.deliveredAt) || null),
+      ref: s.trx?.transmissionId || null,
+    });
+  }
+
+  return {
+    steps,
+    shipment: shipment ? {
+      shipmentId: shipment.shipmentId,
+      status: shipment.status,
+      route: shipment.route,
+      estimatedDeliveryDate: shipment.estimatedDeliveryDate,
+    } : null,
+    invoice: invoice ? {
+      invoiceId: invoice.invoiceId,
+      status: invoice.status,
+      amount: invoice.amount,
+      dueDate: invoice.dueDate,
+      ediSent: invoice.ediSent,
+      edi997Sent: invoice.edi997Sent,
+      shipmentId: shipment?.shipmentId,
+      route: shipment?.route,
+      pdfUrl: invoicePdfUrl,
+    } : null,
+  };
+}
+
+// GET EDI pipeline for a tender (204 → 997)
+router.get('/:id/pipeline', auth, async (req, res) => {
+  try {
+    const tender = await LoadTender.findById(req.params.id).populate('partner', 'name isaId');
+    if (!tender) return res.status(404).json({ message: 'Tender not found' });
+
+    const shipment = await Shipment.findOne({ tender: tender._id }).sort({ createdAt: -1 });
+    const invoice = shipment
+      ? await Invoice.findOne({ shipment: shipment._id }).sort({ createdAt: -1 })
+      : null;
+
+    const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const invoicePdfUrl = invoice?.pdfToken
+      ? `${BASE_URL}/api/invoices/pdf/${invoice.pdfToken}`
+      : null;
+
+    const trxOr = [
+      { transmissionId: tender.ediRef },
+      { ediCode: '990', payload: { $regex: tender.tenderId } },
+    ];
+    if (shipment) trxOr.push({ shipment: shipment._id });
+    const transmissions = await Transmission.find({ partner: tender.partner, $or: trxOr })
+      .sort({ createdAt: 1 });
+
+    res.json(buildEdiPipeline(tender, shipment, invoice, transmissions, invoicePdfUrl));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// GET one — full 204 detail for drawer
 router.get('/:id', auth, async (req, res) => {
   try {
     const tender = await LoadTender.findById(req.params.id)
@@ -162,6 +363,18 @@ router.post('/:id/respond', auth, async (req, res) => {
 
       tender.status = status;
       tender.assignedVehicle = vehicleId;
+
+      await loadRateConfig();
+      const pricing = calculateFreight(
+        tender.route,
+        vehicle.type,
+        rateConfig.ratePerKm,
+        rateConfig.minCharge,
+      );
+      tender.freightRate = pricing.amount || 0;
+      if (pricing.error) {
+        console.warn(`[990 pricing] ${pricing.error} — route: "${tender.route}"`);
+      }
 
       const o = tender.originAddress || {};
       const existingShipment = await Shipment.findOne({ shipmentId: tender.shipmentId });
@@ -218,6 +431,7 @@ router.post('/:id/respond', auth, async (req, res) => {
         estimatedDeliveryDate: tender.estimatedDeliveryDate
           ? new Date(tender.estimatedDeliveryDate).toISOString().slice(0, 10)
           : null,
+        totalAmount: tender.freightRate || 0,
       } : {}),
       ...(status === 'Accepted' && vehicle990 ? {
         assignedVehicle: {

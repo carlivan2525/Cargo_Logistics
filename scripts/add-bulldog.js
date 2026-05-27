@@ -14,7 +14,7 @@ mongoose.connect(process.env.MONGO_URI).then(async () => {
       isaId:       'BULLDOG',
       protocol:    'AS2',
       status:      'Active',
-      ediDocs:     ['204', '990', '214', '210'],
+      ediDocs:     ['204', '990', '214', '210',],
       apiEndpoint: '',
       endpoints: {
         edi990:  process.env.EDI_BULLDOG_990,

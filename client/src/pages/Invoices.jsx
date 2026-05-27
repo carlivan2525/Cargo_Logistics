@@ -112,11 +112,16 @@ function getJson210(inv) {
 }
 
 function getJson997(inv) {
+  const pdfUrl = inv.pdfUrl ?? (inv.pdfToken
+    ? `${(typeof window !== 'undefined' ? window.location.origin : '')}/api/invoices/pdf/${inv.pdfToken}`
+    : null);
   return {
     shipmentId: inv.shipment?.shipmentId ?? '',
-    pdfUrl:     inv.pdfToken
-      ? `${(typeof window !== 'undefined' ? window.location.origin : '')}/api/invoices/pdf/${inv.pdfToken}`
-      : null,
+    invoiceId: inv.invoiceId,
+    totalAmount: inv.amount,
+    dueDate: inv.dueDate ? new Date(inv.dueDate).toISOString().slice(0, 10) : null,
+    status: inv.status ?? 'Pending',
+    pdfUrl,
   };
 }
 

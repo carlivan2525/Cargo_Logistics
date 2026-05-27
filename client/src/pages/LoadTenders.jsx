@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Inbox, Truck, CheckCircle2, XCircle, Clock, ChevronLeft, ChevronRight, Copy, ClipboardCheck } from 'lucide-react';
+import { Inbox, Truck, CheckCircle2, XCircle, Clock, Copy, ClipboardCheck, Circle, Minus, FileCode } from 'lucide-react';
 import { api } from '../api';
 import { canVehicleCarryLoad } from '../utils/capacity';
 import { useToast } from '../components/Toast';
@@ -202,18 +202,448 @@ function get990Json(tender) {
       estimatedDeliveryDate: new Date(tender.estimatedDeliveryDate).toISOString().slice(0, 10),
     } : {}),
   };
-  if (tender.status === 'Accepted' && tender.assignedVehicle) {
-    base.assignedVehicle = {
-      vehicleId: tender.assignedVehicle.vehicleId || '',
-      name:      tender.assignedVehicle.name      || '',
-      type:      tender.assignedVehicle.type      || '',
-      plate:     tender.assignedVehicle.plate     || '',
-    };
+  if (tender.status === 'Accepted') {
+    base.totalAmount = tender.freightRate ?? 0;
+    if (tender.assignedVehicle) {
+      base.assignedVehicle = {
+        vehicleId: tender.assignedVehicle.vehicleId || '',
+        name:      tender.assignedVehicle.name      || '',
+        type:      tender.assignedVehicle.type      || '',
+        plate:     tender.assignedVehicle.plate     || '',
+      };
+    }
   }
   if (tender.status === 'Rejected' && tender.rejectNotes) {
     base.notes = tender.rejectNotes;
   }
   return base;
+}
+
+const PIPELINE_STATE_STYLE = {
+  done:     { dot: 'bg-green-500 border-green-500', line: 'bg-green-500/40', text: 'text-green-400' },
+  current:  { dot: 'bg-blue-500 border-blue-500 ring-4 ring-blue-500/25', line: 'bg-blue-500/30', text: 'text-blue-400' },
+  pending:  { dot: 'bg-input border-gray-600', line: 'bg-white/10', text: 'text-gray-500' },
+  skipped:  { dot: 'bg-input border-gray-700', line: 'bg-white/5', text: 'text-gray-600' },
+  rejected: { dot: 'bg-red-500 border-red-500', line: 'bg-red-500/30', text: 'text-red-400' },
+};
+
+const EDI_214_STATUS = { '214-pickup': 'Pickup', '214-transit': 'In Transit', '214-delivered': 'Delivered' };
+const STATUS_MAP_214 = { Pickup: 'PICKUP', 'In Transit': 'IN_TRANSIT', Delivered: 'DELIVERED' };
+const DESC_MAP_214 = {
+  Pickup: 'Cargo has been picked up from the origin.',
+  'In Transit': 'Cargo departed the central warehouse terminal.',
+  Delivered: 'Cargo has been delivered to the destination.',
+};
+
+function generateX12_214(s) {
+  const pad = (v, n) => String(v ?? '').padEnd(n).slice(0, n);
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const time = new Date().toTimeString().slice(0, 5).replace(':', '');
+  const isaId = (s.partner?.isaId ?? s.partner?.name ?? 'PARTNER').toUpperCase().replace(/\s+/g, '').slice(0, 15);
+  const ctrlNum = (s.shipmentId ?? 'SHP-000001').replace(/[^0-9]/g, '').slice(-9).padStart(9, '0');
+  const routeParts = (s.route || '').split('-');
+  const location = routeParts.length > 1 ? routeParts[routeParts.length - 1].trim() : s.route || '';
+  const mappedStatus = STATUS_MAP_214[s.status] ?? s.status?.toUpperCase().replace(/ /g, '_') ?? 'UNKNOWN';
+  const desc = DESC_MAP_214[s.status] ?? '';
+
+  const segments = [
+    `ISA*00*${pad('', 10)}*00*${pad('', 10)}*ZZ*${pad('CARGO', 15)}*ZZ*${pad(isaId, 15)}*${today.slice(2)}*${time}*^*00501*${ctrlNum}*0*P*>`,
+    `GS*QM*CARGO*${isaId}*${today}*${time}*1*X*005010`,
+    `ST*214*0001`,
+    `B10*${s.shipmentId ?? ''}**CRGO`,
+    `L11*${s.shipmentId ?? ''}*BM`,
+    `N1*SH*CarGO Logistics Services*ZZ*CARGO`,
+    `N1*CN*${isaId}*ZZ*${isaId}`,
+    `AT7*${mappedStatus}*NS**${today}*${time}*LT`,
+    location ? `MS2*CRGO*${location}` : null,
+    s.estimatedDeliveryDate
+      ? `G62*68*${new Date(s.estimatedDeliveryDate).toISOString().slice(0, 10).replace(/-/g, '')}`
+      : null,
+    desc ? `NTE*OTH*${desc}` : null,
+    `SE*${desc ? (location ? 10 : 9) : (location ? 9 : 8)}*0001`,
+    `GE*1*1`,
+    `IEA*1*${ctrlNum}`,
+  ].filter(Boolean);
+
+  return segments.join('~\n') + '~';
+}
+
+function generateX12_210(inv) {
+  const pad = (s, n) => String(s ?? '').padEnd(n).slice(0, n);
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const time = new Date().toTimeString().slice(0, 5).replace(':', '');
+  const isaId = (inv.partner?.isaId ?? inv.partner?.name ?? 'PARTNER').toUpperCase().replace(/\s+/g, '').slice(0, 15);
+  const ctrlNum = (inv.invoiceId ?? 'INV-000001').replace('INV-', '').padStart(9, '0');
+  const amt = Number(inv.amount ?? 0).toFixed(2);
+
+  const segments = [
+    `ISA*00*${pad('', 10)}*00*${pad('', 10)}*ZZ*${pad('CARGO', 15)}*ZZ*${pad(isaId, 15)}*${today.slice(2)}*${time}*^*00501*${ctrlNum}*0*P*>`,
+    `GS*IM*CARGO*${isaId}*${today}*${time}*1*X*005010`,
+    `ST*210*0001`,
+    `B3**${inv.invoiceId ?? ''}**PP*${today}**${amt}*${today}*${isaId}`,
+    `C3*PHP`,
+    inv.shipment?.shipmentId ? `N9*BM*${inv.shipment.shipmentId}` : null,
+    inv.shipment?.route ? `N9*RT*${inv.shipment.route}` : null,
+    `N1*BT*${inv.partner?.name ?? isaId}*ZZ*${isaId}`,
+    `N1*SF*CarGO Logistics Services*ZZ*CARGO`,
+    `L3*${amt}*G***${amt}`,
+  ].filter(Boolean);
+
+  const seCount = segments.length - 2;
+  segments.push(`SE*${seCount}*0001`);
+  segments.push(`GE*1*1`);
+  segments.push(`IEA*1*${ctrlNum}`);
+  return segments.join('~\n') + '~';
+}
+
+function generateX12_820(inv) {
+  const pad = (s, n) => String(s ?? '').padEnd(n).slice(0, n);
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const time = new Date().toTimeString().slice(0, 5).replace(':', '');
+  const isaId = (inv.partner?.isaId ?? inv.partner?.name ?? 'PARTNER').toUpperCase().replace(/\s+/g, '').slice(0, 15);
+  const ctrlNum = (inv.invoiceId ?? 'INV-000001').replace('INV-', '').padStart(9, '0');
+  const amt = Number(inv.amount ?? 0).toFixed(2);
+
+  const segments = [
+    `ISA*00*${pad('', 10)}*00*${pad('', 10)}*ZZ*${pad(isaId, 15)}*ZZ*${pad('CARGO', 15)}*${today.slice(2)}*${time}*^*00501*${ctrlNum}*0*P*>`,
+    `GS*RA*${isaId}*CARGO*${today}*${time}*1*X*005010`,
+    `ST*820*0001`,
+    `BPR*C*${amt}*C*ACH***01***${today}`,
+    `TRN*1*${inv.invoiceId ?? ''}*${isaId}`,
+    `REF*ST*PAID`,
+    inv.shipment?.shipmentId ? `REF*BM*${inv.shipment.shipmentId}` : null,
+    `DTM*097*${today}`,
+    `N1*PE*CarGO Logistics Services*ZZ*CARGO`,
+    `N1*PR*${inv.partner?.name ?? isaId}*ZZ*${isaId}`,
+    `RMR*IV*${inv.invoiceId ?? ''}**${amt}`,
+  ].filter(Boolean);
+
+  const seCount = segments.length - 2;
+  segments.push(`SE*${seCount}*0001`);
+  segments.push(`GE*1*1`);
+  segments.push(`IEA*1*${ctrlNum}`);
+  return segments.join('~\n') + '~';
+}
+
+function generateX12_997(inv) {
+  const pad = (s, n) => String(s ?? '').padEnd(n).slice(0, n);
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const time = new Date().toTimeString().slice(0, 5).replace(':', '');
+  const isaId = (inv.partner?.isaId ?? inv.partner?.name ?? 'PARTNER').toUpperCase().replace(/\s+/g, '').slice(0, 15);
+  const ctrlNum = (inv.invoiceId ?? 'INV-000001').replace('INV-', '').padStart(9, '0');
+
+  const segments = [
+    `ISA*00*${pad('', 10)}*00*${pad('', 10)}*ZZ*${pad('CARGO', 15)}*ZZ*${pad(isaId, 15)}*${today.slice(2)}*${time}*^*00501*${ctrlNum}*0*P*>`,
+    `GS*FA*CARGO*${isaId}*${today}*${time}*1*X*005010`,
+    `ST*997*0001`,
+    `AK1*IM*1`,
+    `AK2*210*0001`,
+    `AK5*A`,
+    `AK9*A*1*1*1`,
+    `SE*6*0001`,
+    `GE*1*1`,
+    `IEA*1*${ctrlNum}`,
+  ];
+  return segments.join('~\n') + '~';
+}
+
+function isPipelineStepClickable(step) {
+  return step.state === 'done' || step.state === 'rejected';
+}
+
+function getJson214(s) {
+  const routeParts = (s.route || '').split('-');
+  const location = routeParts.length > 1 ? routeParts[routeParts.length - 1].trim() : s.route || '';
+  return {
+    shipmentId: s.shipmentId,
+    status: STATUS_MAP_214[s.status] ?? s.status,
+    location,
+    description: DESC_MAP_214[s.status] ?? '',
+    ...(s.estimatedDeliveryDate ? {
+      estimatedDeliveryDate: new Date(s.estimatedDeliveryDate).toISOString().slice(0, 10),
+    } : {}),
+  };
+}
+
+function getJson210(inv) {
+  return {
+    shipmentId: inv.shipment?.shipmentId ?? inv.shipmentId ?? '',
+    invoiceId: inv.invoiceId,
+    totalAmount: inv.amount,
+    dueDate: inv.dueDate ? new Date(inv.dueDate).toISOString().slice(0, 10) : null,
+    status: inv.status ?? 'Pending',
+  };
+}
+
+function getJson820(inv) {
+  return {
+    invoiceNumber: inv.invoiceId,
+    shipmentId: inv.shipment?.shipmentId ?? inv.shipmentId ?? '',
+    status: 'PAID',
+  };
+}
+
+function getJson997(inv) {
+  return {
+    shipmentId: inv.shipment?.shipmentId ?? inv.shipmentId ?? '',
+    invoiceId: inv.invoiceId,
+    totalAmount: inv.amount,
+    dueDate: inv.dueDate ? new Date(inv.dueDate).toISOString().slice(0, 10) : null,
+    status: inv.status ?? 'Pending',
+    pdfUrl: inv.pdfUrl ?? null,
+  };
+}
+
+function getPipelineStepX12(step, tender, pipeline) {
+  if (!isPipelineStepClickable(step)) return null;
+
+  const partner = tender?.partner;
+  const ship = pipeline?.shipment;
+  const inv = pipeline?.invoice;
+
+  switch (step.key) {
+    case '204':
+      return generateX12_204(tender);
+    case '990':
+      return tender.status !== 'Pending' ? generateX12_990(tender) : null;
+    case '214-pickup':
+    case '214-transit':
+    case '214-delivered':
+      if (!ship) return null;
+      return generateX12_214({
+        ...ship,
+        partner,
+        status: EDI_214_STATUS[step.key],
+      });
+    case '210':
+      if (!inv) return null;
+      return generateX12_210({
+        ...inv,
+        partner,
+        shipment: { shipmentId: inv.shipmentId, route: inv.route },
+      });
+    case '820':
+      if (!inv) return null;
+      return generateX12_820({
+        ...inv,
+        partner,
+        shipment: { shipmentId: inv.shipmentId, route: inv.route },
+      });
+    case '997':
+      if (!inv) return null;
+      return generateX12_997({
+        ...inv,
+        partner,
+        shipment: { shipmentId: inv.shipmentId, route: inv.route },
+      });
+    default:
+      return null;
+  }
+}
+
+function getPipelineStepJson(step, tender, pipeline) {
+  if (!isPipelineStepClickable(step)) return null;
+
+  const partner = tender?.partner;
+  const ship = pipeline?.shipment;
+  const inv = pipeline?.invoice;
+
+  switch (step.key) {
+    case '204':
+      return tender.rawJson || tender;
+    case '990':
+      return tender.status !== 'Pending' ? get990Json(tender) : null;
+    case '214-pickup':
+    case '214-transit':
+    case '214-delivered':
+      if (!ship) return null;
+      return getJson214({ ...ship, partner, status: EDI_214_STATUS[step.key] });
+    case '210':
+      if (!inv) return null;
+      return getJson210({ ...inv, partner, shipment: { shipmentId: inv.shipmentId, route: inv.route } });
+    case '820':
+      if (!inv) return null;
+      return getJson820({ ...inv, partner, shipment: { shipmentId: inv.shipmentId, route: inv.route } });
+    case '997':
+      if (!inv) return null;
+      return getJson997({ ...inv, partner, shipment: { shipmentId: inv.shipmentId, route: inv.route } });
+    default:
+      return null;
+  }
+}
+
+function PipelineIcon({ state }) {
+  if (state === 'done') return <CheckCircle2 size={12} className="text-white" />;
+  if (state === 'current') return <Clock size={12} className="text-white" />;
+  if (state === 'rejected') return <XCircle size={12} className="text-white" />;
+  if (state === 'skipped') return <Minus size={12} className="text-gray-500" />;
+  return <Circle size={10} className="text-gray-500" />;
+}
+
+function EdiPipeline({ pipeline, loading, tender }) {
+  const [selectedStepKey, setSelectedStepKey] = useState(null);
+  const [viewMode, setViewMode] = useState('x12');
+  const [copied, setCopied] = useState(false);
+
+  const fmtStepTime = (at) => at
+    ? new Date(at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : null;
+
+  if (loading) {
+    return (
+      <div className="bg-input rounded-xl px-4 py-3 animate-pulse">
+        <div className="h-3 w-32 bg-white/10 rounded mb-3" />
+        <div className="h-16 bg-white/5 rounded-lg" />
+      </div>
+    );
+  }
+
+  const steps = pipeline?.steps ?? [];
+  if (!steps.length) return null;
+
+  const selectedStep = steps.find(s => s.key === selectedStepKey) ?? null;
+  const selectedX12 = selectedStep ? getPipelineStepX12(selectedStep, tender, pipeline) : null;
+  const selectedJson = selectedStep ? getPipelineStepJson(selectedStep, tender, pipeline) : null;
+  const hasContent = viewMode === 'x12' ? Boolean(selectedX12) : Boolean(selectedJson);
+
+  const selectStep = (step) => {
+    if (!isPipelineStepClickable(step)) return;
+    setViewMode('x12');
+    setCopied(false);
+    setSelectedStepKey(prev => (prev === step.key ? null : step.key));
+  };
+
+  const copyContent = () => {
+    const text = viewMode === 'x12'
+      ? selectedX12
+      : JSON.stringify(selectedJson, null, 2);
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div className="bg-input rounded-xl px-4 py-3 border border-app/50">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">EDI document pipeline</p>
+        {pipeline?.shipment && (
+          <span className="text-[10px] font-mono text-gray-500">{pipeline.shipment.shipmentId}</span>
+        )}
+      </div>
+      <div className="overflow-x-auto pb-1 -mx-1 px-1">
+        <div className="flex min-w-max gap-0">
+          {steps.map((step, i) => {
+            const style = PIPELINE_STATE_STYLE[step.state] || PIPELINE_STATE_STYLE.pending;
+            const isLast = i === steps.length - 1;
+            const isSelected = selectedStepKey === step.key;
+            const clickable = isPipelineStepClickable(step);
+            const stepBody = (
+              <>
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${style.dot}`}>
+                  <PipelineIcon state={step.state} />
+                </div>
+                <p className={`text-[10px] font-bold mt-1.5 ${style.text}`}>{step.code}</p>
+                <p className="text-[9px] text-gray-500 text-center leading-tight mt-0.5 px-0.5">{step.label}</p>
+                {fmtStepTime(step.at) && (
+                  <p className="text-[8px] text-gray-600 mt-0.5 text-center leading-tight">{fmtStepTime(step.at)}</p>
+                )}
+              </>
+            );
+            return (
+              <div key={step.key} className="flex items-start">
+                {clickable ? (
+                  <button
+                    type="button"
+                    onClick={() => selectStep(step)}
+                    className={`flex flex-col items-center w-[72px] shrink-0 rounded-lg py-1 transition cursor-pointer border-none bg-transparent
+                      ${isSelected ? 'ring-1 ring-blue-500/50 bg-blue-500/10' : 'hover:bg-white/5'}`}
+                  >
+                    {stepBody}
+                  </button>
+                ) : (
+                  <div className="flex flex-col items-center w-[72px] shrink-0 rounded-lg py-1 cursor-default opacity-60">
+                    {stepBody}
+                  </div>
+                )}
+                {!isLast && (
+                  <div className={`h-0.5 w-4 mt-3 shrink-0 rounded ${style.line}`} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {pipeline?.invoice && (
+        <p className="text-[10px] text-gray-500 mt-2 pt-2 border-t border-subtle">
+          Invoice <span className="font-mono text-gray-400">{pipeline.invoice.invoiceId}</span>
+          <span className="mx-1">·</span>
+          {pipeline.invoice.status}
+        </p>
+      )}
+
+      {selectedStep && isPipelineStepClickable(selectedStep) && (
+        <div className="mt-3 pt-3 border-t border-subtle">
+          <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <FileCode size={12} className="text-blue-400 shrink-0" />
+              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide truncate">
+                EDI {selectedStep.code} — {selectedStep.label}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="flex rounded-lg overflow-hidden border border-app text-[10px]">
+                <button
+                  type="button"
+                  onClick={() => { setViewMode('json'); setCopied(false); }}
+                  className={`px-2.5 py-1 transition cursor-pointer border-none
+                    ${viewMode === 'json' ? 'bg-blue-600 text-white' : 'bg-input text-gray-400 hover:text-app'}`}
+                >
+                  JSON
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setViewMode('x12'); setCopied(false); }}
+                  className={`px-2.5 py-1 transition cursor-pointer border-none
+                    ${viewMode === 'x12' ? 'bg-blue-600 text-white' : 'bg-input text-gray-400 hover:text-app'}`}
+                >
+                  ANSI X12
+                </button>
+              </div>
+              {hasContent && (
+                <button
+                  type="button"
+                  onClick={copyContent}
+                  className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md bg-card border border-app text-gray-400 hover:text-app transition cursor-pointer"
+                >
+                  {copied ? <ClipboardCheck size={10} className="text-green-400" /> : <Copy size={10} />}
+                  {copied ? 'Copied' : 'Copy'}
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="h-44 overflow-y-auto rounded-lg bg-black/40 border border-app px-3 py-2.5">
+            {viewMode === 'x12' ? (
+              selectedX12 ? (
+                <pre className="font-mono text-[11px] text-gray-400 whitespace-pre-wrap break-all leading-relaxed m-0">
+                  {selectedX12}
+                </pre>
+              ) : (
+                <p className="text-[11px] text-gray-600 text-center py-6">ANSI X12 preview unavailable.</p>
+              )
+            ) : selectedJson ? (
+              <pre className="font-mono text-[11px] text-gray-400 whitespace-pre-wrap break-all leading-relaxed m-0">
+                {JSON.stringify(selectedJson, null, 2)}
+              </pre>
+            ) : (
+              <p className="text-[11px] text-gray-600 text-center py-6">JSON preview unavailable.</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function generateX12_990(tender) {
@@ -224,6 +654,7 @@ function generateX12_990(tender) {
   const ctrlNum = (tender.ediRef ?? 'TRX-000001').replace('TRX-','').padStart(9,'0');
   const accepted = tender.status === 'Accepted';
   const v = tender.assignedVehicle;
+  const amt = tender.freightRate ?? 0;
 
   const segments = [
     `ISA*00*${pad('',10)}*00*${pad('',10)}*ZZ*${pad('CARGO',15)}*ZZ*${pad(isaId,15)}*${today.slice(2)}*${time}*^*00501*${ctrlNum}*0*P*>`,
@@ -236,7 +667,7 @@ function generateX12_990(tender) {
     accepted && v ? `N1*CA*${v.name ?? ''}*ZZ*CRGO` : null,
     accepted && v ? `L11*${v.vehicleId ?? ''}*VH` : null,
     accepted && v ? `L11*${v.plate ?? ''}*LP` : null,
-    accepted ? `AMT*SF*60` : null,
+    accepted ? `AMT*SF*${amt}` : null,
     accepted && tender.estimatedDeliveryDate
       ? `G62*68*${new Date(tender.estimatedDeliveryDate).toISOString().slice(0,10).replace(/-/g,'')}`
       : null,
@@ -252,7 +683,9 @@ function generateX12_990(tender) {
 
 function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
   const [tender, setTender] = useState(initialTender);
+  const [pipeline, setPipeline] = useState(null);
   const [detailLoading, setDetailLoading] = useState(true);
+  const [pipelineLoading, setPipelineLoading] = useState(true);
   const [vehicle, setVehicle] = useState(initialTender.assignedVehicle?._id ?? null);
   const [loadingAction, setLoadingAction] = useState(null); // 'Accepted' | 'Rejected' | null
   const [showX12, setShowX12] = useState(false);
@@ -278,15 +711,26 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
     let cancelled = false;
     (async () => {
       try {
-        const fresh = await api.get(`/loadtenders/${initialTender._id}`);
+        const [freshResult, pipeResult] = await Promise.allSettled([
+          api.get(`/loadtenders/${initialTender._id}`),
+          api.get(`/loadtenders/${initialTender._id}/pipeline`),
+        ]);
         if (!cancelled) {
-          setTender(fresh);
-          setVehicle(fresh.assignedVehicle?._id ?? null);
+          if (freshResult.status === 'fulfilled') {
+            setTender(freshResult.value);
+            setVehicle(freshResult.value.assignedVehicle?._id ?? null);
+          } else {
+            setTender(initialTender);
+          }
+          if (pipeResult.status === 'fulfilled') setPipeline(pipeResult.value);
         }
       } catch {
         if (!cancelled) setTender(initialTender);
       } finally {
-        if (!cancelled) setDetailLoading(false);
+        if (!cancelled) {
+          setDetailLoading(false);
+          setPipelineLoading(false);
+        }
       }
     })();
     return () => { cancelled = true; };
@@ -314,40 +758,45 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
   const fmt = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
   const origin = tender.originAddress || {};
 
-  if (detailLoading) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-        <div className="bg-card border border-app rounded-2xl px-8 py-6 text-sm text-gray-400">Loading 204 details…</div>
-      </div>
-    );
-  }
-
   return (
     <>
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-card border border-app rounded-2xl w-full max-w-3xl max-h-[92vh] shadow-2xl flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-app shrink-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Inbox size={15} className="text-blue-400" />
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <button
+        type="button"
+        aria-label="Close drawer"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm border-none cursor-default"
+        onClick={onClose}
+      />
+      <aside className="relative h-full w-full max-w-xl bg-card border-l border-app shadow-2xl flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-app shrink-0">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <Inbox size={15} className="text-blue-400 shrink-0" />
             <span className="font-semibold text-app text-sm">EDI 204 — Load Tender</span>
-            <span className="text-xs font-mono text-gray-500">{tender.tenderId}</span>
+            <span className="text-xs font-mono text-gray-500 truncate">{tender.tenderId}</span>
             {tender.orderId && (
-              <span className="text-xs font-mono text-gray-500">· {tender.orderId}</span>
+              <span className="text-xs font-mono text-gray-500 truncate">· {tender.orderId}</span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
+              disabled={detailLoading}
               onClick={() => { setX12ViewMode('x12'); setCopied(false); setShowX12(true); }}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-input border border-app hover:bg-hover transition cursor-pointer text-gray-400 hover:text-app"
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-input border border-app hover:bg-hover transition cursor-pointer text-gray-400 hover:text-app disabled:opacity-50"
             >
               <Copy size={12} /> View X12
             </button>
-            <button type="button" onClick={onClose} className="text-muted-app hover:text-app transition cursor-pointer bg-transparent border-none text-lg leading-none">×</button>
+            <button type="button" onClick={onClose} className="text-muted-app hover:text-app transition cursor-pointer bg-transparent border-none text-lg leading-none px-1">×</button>
           </div>
         </div>
 
-        <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+        <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+          <EdiPipeline pipeline={pipeline} loading={pipelineLoading || detailLoading} tender={tender} />
+
+          {detailLoading ? (
+            <div className="text-sm text-gray-500 py-8 text-center animate-pulse">Loading 204 details…</div>
+          ) : (
+          <>
           <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-5 gap-y-2">
             <div>
               <p className="text-[10px] text-gray-500">ORDER</p>
@@ -424,10 +873,12 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
               </p>
             )}
           </div>
+          </>
+          )}
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-app shrink-0">
-          {tender.status === 'Pending' ? (
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-app shrink-0 bg-card">
+          {!detailLoading && tender.status === 'Pending' ? (
             <>
               <button
                 type="button"
@@ -453,7 +904,7 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
                 {loadingAction === 'Accepted' ? 'Sending…' : 'Send 990 — Accepted'}
               </button>
             </>
-          ) : (
+          ) : !detailLoading ? (
             <button
               type="button"
               onClick={() => { setView990Mode('x12'); setCopied990(false); setShow990(true); }}
@@ -464,9 +915,9 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
             >
               <Copy size={10} /> View 990 — {tender.status}
             </button>
-          )}
+          ) : null}
         </div>
-      </div>
+      </aside>
     </div>
 
     {/* Reject Notes Modal */}
