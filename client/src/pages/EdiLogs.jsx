@@ -41,7 +41,7 @@ function EdiLogs() {
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-app">
         <div className="flex items-center gap-2">
-          <Database size={14} className="text-gray-400" />
+          <Database size={14} className="text-secondary-app" />
           <span className="font-semibold text-sm text-app">EDI Logs</span>
           <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">
             {logs.filter(l => l.level === 'ERROR').length} errors
@@ -49,19 +49,19 @@ function EdiLogs() {
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 bg-input border border-app rounded-lg px-3 py-1.5">
-            <Search size={12} className="text-gray-500" />
+            <Search size={12} className="text-muted-app" />
             <input
               type="text"
               placeholder="Search logs..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="bg-transparent text-xs text-gray-300 placeholder-gray-600 outline-none w-36"
+              className="bg-transparent text-xs text-secondary-app placeholder:text-muted-app outline-none w-36"
             />
           </div>
           <select
             value={filterLevel}
             onChange={e => setFilterLevel(e.target.value)}
-            className="bg-input border border-app text-xs text-gray-300 rounded-lg px-2 py-1.5 outline-none cursor-pointer"
+            className="bg-input border border-app text-xs text-secondary-app rounded-lg px-2 py-1.5 outline-none cursor-pointer"
           >
             <option value="All">All Levels</option>
             {['OK','INFO','WARN','ERROR'].map(l => <option key={l} value={l}>{l}</option>)}
@@ -87,17 +87,17 @@ function EdiLogs() {
                   log.level === 'WARN' ? 'text-yellow-400 mt-0.5' :
                   'text-red-400 mt-0.5'
                 } />
-                <span className="text-gray-600 w-20 flex-shrink-0">{log.time}</span>
+                <span className="text-muted-app w-20 flex-shrink-0">{log.time}</span>
                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold w-12 text-center flex-shrink-0 ${LEVEL_STYLE[log.level]}`}>
                   {log.level}
                 </span>
                 <span className="text-blue-400 w-8 flex-shrink-0">{log.ediCode}</span>
                 <span className="text-purple-400 w-28 flex-shrink-0 truncate">{log.partner}</span>
-                <span className="text-gray-300 flex-1">{log.message}</span>
+                <span className="text-app flex-1">{log.message}</span>
               </div>
               {isExpanded && log.isa && (
                 <div className="px-5 pb-3 ml-10">
-                  <div className="bg-black/40 border border-app rounded-lg px-4 py-2.5 text-gray-400 text-[11px] break-all">
+                  <div className="bg-code-block border border-app rounded-lg px-4 py-2.5 text-code text-[11px] break-all">
                     {log.isa}
                   </div>
                 </div>
@@ -106,7 +106,7 @@ function EdiLogs() {
           );
         })}
         {filtered.length === 0 && (
-          <div className="text-center py-10 text-gray-600">No logs found.</div>
+          <div className="text-center py-10 text-muted-app">No logs found.</div>
         )}
       </div>
     </div>

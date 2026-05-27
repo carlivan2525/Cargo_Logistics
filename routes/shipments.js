@@ -108,8 +108,9 @@ router.put('/:id/status', auth, async (req, res) => {
         description: DESCRIPTION_MAP[status] || '',
       };
 
-      const SURPLUS_VENDOR_URL = process.env.EDI_SURPLUS_214_VENDOR;
-      const HIRAYA_VENDOR_URL  = process.env.EDI_HIRAYA_214_VENDOR;
+      const SURPLUS_VENDOR_URL  = process.env.EDI_SURPLUS_214_VENDOR;
+      const HIRAYA_VENDOR_URL   = process.env.EDI_HIRAYA_214_VENDOR;
+      const NEWFORGE_VENDOR_URL = process.env.EDI_NEWFORGE_214_VENDOR;
 
       const WEBHOOK_214 = {
         'surplus': [
@@ -125,6 +126,7 @@ router.put('/:id/status', auth, async (req, res) => {
         ],
         'newforge': [
           process.env.EDI_NEWFORGE_214,
+          NEWFORGE_VENDOR_URL,
         ],
       };
 
@@ -134,6 +136,10 @@ router.put('/:id/status', auth, async (req, res) => {
       // always include surplus vendor URL if not already present
       if (partnerName === 'surplus' && !webhookUrls.includes(SURPLUS_VENDOR_URL)) {
         webhookUrls = [...webhookUrls, SURPLUS_VENDOR_URL];
+      }
+      // always include Newforge vendor URL if not already present
+      if (partnerName === 'newforge' && !webhookUrls.includes(NEWFORGE_VENDOR_URL)) {
+        webhookUrls = [...webhookUrls, NEWFORGE_VENDOR_URL];
       }
       console.log(`[214] will POST to:`, webhookUrls);
       for (const webhookUrl of webhookUrls) {

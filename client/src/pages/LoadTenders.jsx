@@ -34,7 +34,7 @@ function formatWeight(value) {
 function DetailField({ label, value }) {
   return (
     <div>
-      <p className="text-[10px] text-gray-500 uppercase tracking-wide">{label}</p>
+      <p className="text-[10px] text-muted-app uppercase tracking-wide">{label}</p>
       <p className="text-xs text-app mt-0.5 break-words">{dash(value)}</p>
     </div>
   );
@@ -44,8 +44,8 @@ function Section({ title, subtitle, children }) {
   return (
     <div className="bg-input rounded-lg px-4 py-3 space-y-3">
       <div>
-        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{title}</p>
-        {subtitle && <p className="text-[10px] text-gray-600 mt-0.5">{subtitle}</p>}
+        <p className="text-[10px] font-semibold text-secondary-app uppercase tracking-wide">{title}</p>
+        {subtitle && <p className="text-[10px] text-muted-app mt-0.5">{subtitle}</p>}
       </div>
       {children}
     </div>
@@ -61,15 +61,15 @@ function VehicleDropdown({ value, onChange, vehicles, loadWeight }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-hover border border-app text-gray-300 hover:bg-white/15 transition cursor-pointer min-w-[180px] justify-between"
+        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-hover border border-app text-secondary-app hover:bg-hover transition cursor-pointer min-w-[180px] justify-between"
       >
         <span className="flex items-center gap-1.5">
           {selected?.image
             ? <img src={api.imageUrl(selected.image)} alt={selected.name} className="w-5 h-5 object-contain rounded" />
-            : <Truck size={11} className="text-gray-500" />}
+            : <Truck size={11} className="text-muted-app" />}
           {selected ? `${selected.name} · ${selected.plate}` : 'Assign vehicle...'}
         </span>
-        <span className="text-[10px] text-gray-500">▾</span>
+        <span className="text-[10px] text-muted-app">▾</span>
       </button>
 
       {open && (
@@ -220,11 +220,11 @@ function get990Json(tender) {
 }
 
 const PIPELINE_STATE_STYLE = {
-  done:     { dot: 'bg-green-500 border-green-500', line: 'bg-green-500/40', text: 'text-green-400' },
-  current:  { dot: 'bg-blue-500 border-blue-500 ring-4 ring-blue-500/25', line: 'bg-blue-500/30', text: 'text-blue-400' },
-  pending:  { dot: 'bg-input border-gray-600', line: 'bg-white/10', text: 'text-gray-500' },
-  skipped:  { dot: 'bg-input border-gray-700', line: 'bg-white/5', text: 'text-gray-600' },
-  rejected: { dot: 'bg-red-500 border-red-500', line: 'bg-red-500/30', text: 'text-red-400' },
+  done:     { dot: 'bg-green-500 border-green-500', line: 'bg-green-500/40', text: 'text-green-600' },
+  current:  { dot: 'bg-blue-500 border-blue-500 ring-4 ring-blue-500/25', line: 'bg-blue-500/30', text: 'text-blue-600' },
+  pending:  { dot: 'bg-input border-app', line: 'bg-pipeline-line-muted', text: 'text-muted-app' },
+  skipped:  { dot: 'bg-input border-app', line: 'bg-pipeline-line-muted', text: 'text-muted-app' },
+  rejected: { dot: 'bg-red-500 border-red-500', line: 'bg-red-500/30', text: 'text-red-600' },
 };
 
 const EDI_214_STATUS = { '214-pickup': 'Pickup', '214-transit': 'In Transit', '214-delivered': 'Delivered' };
@@ -476,8 +476,8 @@ function PipelineIcon({ state }) {
   if (state === 'done') return <CheckCircle2 size={12} className="text-white" />;
   if (state === 'current') return <Clock size={12} className="text-white" />;
   if (state === 'rejected') return <XCircle size={12} className="text-white" />;
-  if (state === 'skipped') return <Minus size={12} className="text-gray-500" />;
-  return <Circle size={10} className="text-gray-500" />;
+  if (state === 'skipped') return <Minus size={12} className="text-muted-app" />;
+  return <Circle size={10} className="text-muted-app" />;
 }
 
 function EdiPipeline({ pipeline, loading, tender }) {
@@ -492,8 +492,8 @@ function EdiPipeline({ pipeline, loading, tender }) {
   if (loading) {
     return (
       <div className="bg-input rounded-xl px-4 py-3 animate-pulse">
-        <div className="h-3 w-32 bg-white/10 rounded mb-3" />
-        <div className="h-16 bg-white/5 rounded-lg" />
+        <div className="h-3 w-32 bg-hover rounded mb-3" />
+        <div className="h-16 bg-hover rounded-lg" />
       </div>
     );
   }
@@ -527,9 +527,9 @@ function EdiPipeline({ pipeline, loading, tender }) {
   return (
     <div className="bg-input rounded-xl px-4 py-3 border border-app/50">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">EDI document pipeline</p>
+        <p className="text-[10px] font-semibold text-secondary-app uppercase tracking-wide">EDI document pipeline</p>
         {pipeline?.shipment && (
-          <span className="text-[10px] font-mono text-gray-500">{pipeline.shipment.shipmentId}</span>
+          <span className="text-[10px] font-mono text-muted-app">{pipeline.shipment.shipmentId}</span>
         )}
       </div>
       <div className="overflow-x-auto pb-1 -mx-1 px-1">
@@ -545,9 +545,9 @@ function EdiPipeline({ pipeline, loading, tender }) {
                   <PipelineIcon state={step.state} />
                 </div>
                 <p className={`text-[10px] font-bold mt-1.5 ${style.text}`}>{step.code}</p>
-                <p className="text-[9px] text-gray-500 text-center leading-tight mt-0.5 px-0.5">{step.label}</p>
+                <p className="text-[9px] text-muted-app text-center leading-tight mt-0.5 px-0.5">{step.label}</p>
                 {fmtStepTime(step.at) && (
-                  <p className="text-[8px] text-gray-600 mt-0.5 text-center leading-tight">{fmtStepTime(step.at)}</p>
+                  <p className="text-[8px] text-muted-app mt-0.5 text-center leading-tight">{fmtStepTime(step.at)}</p>
                 )}
               </>
             );
@@ -558,7 +558,7 @@ function EdiPipeline({ pipeline, loading, tender }) {
                     type="button"
                     onClick={() => selectStep(step)}
                     className={`flex flex-col items-center w-[72px] shrink-0 rounded-lg py-1 transition cursor-pointer border-none bg-transparent
-                      ${isSelected ? 'ring-1 ring-blue-500/50 bg-blue-500/10' : 'hover:bg-white/5'}`}
+                      ${isSelected ? 'ring-1 ring-blue-500/50 bg-blue-500/10' : 'hover:bg-hover'}`}
                   >
                     {stepBody}
                   </button>
@@ -576,8 +576,8 @@ function EdiPipeline({ pipeline, loading, tender }) {
         </div>
       </div>
       {pipeline?.invoice && (
-        <p className="text-[10px] text-gray-500 mt-2 pt-2 border-t border-subtle">
-          Invoice <span className="font-mono text-gray-400">{pipeline.invoice.invoiceId}</span>
+        <p className="text-[10px] text-muted-app mt-2 pt-2 border-t border-subtle">
+          Invoice <span className="font-mono text-secondary-app">{pipeline.invoice.invoiceId}</span>
           <span className="mx-1">·</span>
           {pipeline.invoice.status}
         </p>
@@ -588,7 +588,7 @@ function EdiPipeline({ pipeline, loading, tender }) {
           <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
             <div className="flex items-center gap-1.5 min-w-0">
               <FileCode size={12} className="text-blue-400 shrink-0" />
-              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide truncate">
+              <span className="text-[10px] font-semibold text-secondary-app uppercase tracking-wide truncate">
                 EDI {selectedStep.code} — {selectedStep.label}
               </span>
             </div>
@@ -598,7 +598,7 @@ function EdiPipeline({ pipeline, loading, tender }) {
                   type="button"
                   onClick={() => { setViewMode('json'); setCopied(false); }}
                   className={`px-2.5 py-1 transition cursor-pointer border-none
-                    ${viewMode === 'json' ? 'bg-blue-600 text-white' : 'bg-input text-gray-400 hover:text-app'}`}
+                    ${viewMode === 'json' ? 'bg-blue-600 text-white' : 'bg-input text-secondary-app hover:text-app'}`}
                 >
                   JSON
                 </button>
@@ -606,7 +606,7 @@ function EdiPipeline({ pipeline, loading, tender }) {
                   type="button"
                   onClick={() => { setViewMode('x12'); setCopied(false); }}
                   className={`px-2.5 py-1 transition cursor-pointer border-none
-                    ${viewMode === 'x12' ? 'bg-blue-600 text-white' : 'bg-input text-gray-400 hover:text-app'}`}
+                    ${viewMode === 'x12' ? 'bg-blue-600 text-white' : 'bg-input text-secondary-app hover:text-app'}`}
                 >
                   ANSI X12
                 </button>
@@ -615,7 +615,7 @@ function EdiPipeline({ pipeline, loading, tender }) {
                 <button
                   type="button"
                   onClick={copyContent}
-                  className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md bg-card border border-app text-gray-400 hover:text-app transition cursor-pointer"
+                  className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md bg-card border border-app text-secondary-app hover:text-app transition cursor-pointer"
                 >
                   {copied ? <ClipboardCheck size={10} className="text-green-400" /> : <Copy size={10} />}
                   {copied ? 'Copied' : 'Copy'}
@@ -623,21 +623,21 @@ function EdiPipeline({ pipeline, loading, tender }) {
               )}
             </div>
           </div>
-          <div className="h-44 overflow-y-auto rounded-lg bg-black/40 border border-app px-3 py-2.5">
+          <div className="h-44 overflow-y-auto rounded-lg bg-code-block border border-app px-3 py-2.5">
             {viewMode === 'x12' ? (
               selectedX12 ? (
-                <pre className="font-mono text-[11px] text-gray-400 whitespace-pre-wrap break-all leading-relaxed m-0">
+                <pre className="font-mono text-[11px] text-code-x12 whitespace-pre-wrap break-all leading-relaxed m-0 text-left">
                   {selectedX12}
                 </pre>
               ) : (
-                <p className="text-[11px] text-gray-600 text-center py-6">ANSI X12 preview unavailable.</p>
+                <p className="text-[11px] text-muted-app text-center py-6">ANSI X12 preview unavailable.</p>
               )
             ) : selectedJson ? (
-              <pre className="font-mono text-[11px] text-gray-400 whitespace-pre-wrap break-all leading-relaxed m-0">
+              <pre className="font-mono text-[11px] text-code-json whitespace-pre-wrap break-all leading-relaxed m-0 text-left">
                 {JSON.stringify(selectedJson, null, 2)}
               </pre>
             ) : (
-              <p className="text-[11px] text-gray-600 text-center py-6">JSON preview unavailable.</p>
+              <p className="text-[11px] text-muted-app text-center py-6">JSON preview unavailable.</p>
             )}
           </div>
         </div>
@@ -772,9 +772,9 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
           <div className="flex items-center gap-2 flex-wrap min-w-0">
             <Inbox size={15} className="text-blue-400 shrink-0" />
             <span className="font-semibold text-app text-sm">EDI 204 — Load Tender</span>
-            <span className="text-xs font-mono text-gray-500 truncate">{tender.tenderId}</span>
+            <span className="text-xs font-mono text-muted-app truncate">{tender.tenderId}</span>
             {tender.orderId && (
-              <span className="text-xs font-mono text-gray-500 truncate">· {tender.orderId}</span>
+              <span className="text-xs font-mono text-muted-app truncate">· {tender.orderId}</span>
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -782,7 +782,7 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
               type="button"
               disabled={detailLoading}
               onClick={() => { setX12ViewMode('x12'); setCopied(false); setShowX12(true); }}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-input border border-app hover:bg-hover transition cursor-pointer text-gray-400 hover:text-app disabled:opacity-50"
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-input border border-app hover:bg-hover transition cursor-pointer text-secondary-app hover:text-app disabled:opacity-50"
             >
               <Copy size={12} /> View X12
             </button>
@@ -794,20 +794,20 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
           <EdiPipeline pipeline={pipeline} loading={pipelineLoading || detailLoading} tender={tender} />
 
           {detailLoading ? (
-            <div className="text-sm text-gray-500 py-8 text-center animate-pulse">Loading 204 details…</div>
+            <div className="text-sm text-muted-app py-8 text-center animate-pulse">Loading 204 details…</div>
           ) : (
           <>
           <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-5 gap-y-2">
             <div>
-              <p className="text-[10px] text-gray-500">ORDER</p>
+              <p className="text-[10px] text-muted-app">ORDER</p>
               <p className="font-mono text-sm font-semibold text-app">{dash(tender.orderId)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-gray-500">SHIPMENT</p>
+              <p className="text-[10px] text-muted-app">SHIPMENT</p>
               <p className="font-mono text-sm text-app">{tender.shipmentId}</p>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] text-gray-500">ROUTE</p>
+              <p className="text-[10px] text-muted-app">ROUTE</p>
               <p className="text-sm text-app truncate">{tender.route}</p>
             </div>
             <span className={`text-xs px-2.5 py-1 rounded-full ${STATUS_STYLE[tender.status]}`}>{tender.status}</span>
@@ -815,14 +815,14 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
 
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="bg-input rounded-lg px-4 py-3">
-              <p className="text-[10px] text-gray-500 mb-1">PARTNER</p>
+              <p className="text-[10px] text-muted-app mb-1">PARTNER</p>
               <p className="font-semibold text-app">{tender.partner?.name}</p>
-              <p className="text-xs text-gray-500 font-mono mt-0.5">{tender.ediRef}</p>
+              <p className="text-xs text-muted-app font-mono mt-0.5">{tender.ediRef}</p>
             </div>
             <div className="bg-input rounded-lg px-4 py-3">
-              <p className="text-[10px] text-gray-500 mb-1">TENDER REF</p>
+              <p className="text-[10px] text-muted-app mb-1">TENDER REF</p>
               <p className="font-semibold text-app font-mono text-sm">{tender.tenderId}</p>
-              <p className="text-xs text-gray-500 mt-0.5">EDI 204 inbound</p>
+              <p className="text-xs text-muted-app mt-0.5">EDI 204 inbound</p>
             </div>
           </div>
 
@@ -860,7 +860,7 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
           </Section>
 
           <div className="bg-input rounded-lg px-4 py-3">
-            <p className="text-[10px] text-gray-500 mb-2 uppercase tracking-wide">Assign vehicle (990 response)</p>
+            <p className="text-[10px] text-muted-app mb-2 uppercase tracking-wide">Assign vehicle (990 response)</p>
             <VehicleDropdown value={vehicle} onChange={setVehicle} vehicles={vehicles} loadWeight={tender.weight} />
             {vehicle && capacityCheck?.ok && (
               <p className="text-[10px] text-green-400 mt-2 flex items-center gap-1">
@@ -896,7 +896,7 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
                 disabled={!canAccept || loadingAction !== null}
                 onClick={() => handleRespond('Accepted')}
                 className={`flex items-center gap-1.5 text-xs px-4 py-2 rounded-lg font-medium transition cursor-pointer border-none
-                  ${canAccept && !loadingAction ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-input text-gray-600 cursor-not-allowed'}`}
+                  ${canAccept && !loadingAction ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-input text-muted-app cursor-not-allowed'}`}
               >
                 {loadingAction === 'Accepted'
                   ? <span className="w-3 h-3 border border-white/40 border-t-transparent rounded-full animate-spin" />
@@ -930,18 +930,18 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
             </div>
             <div>
               <p className="font-semibold text-app text-sm">Reject Load Tender</p>
-              <p className="text-xs text-gray-500 font-mono mt-0.5">{tender.tenderId}</p>
+              <p className="text-xs text-muted-app font-mono mt-0.5">{tender.tenderId}</p>
             </div>
           </div>
           <div className="px-6 py-5 space-y-3">
-            <p className="text-xs text-gray-400">Add a note explaining the reason for rejection. This will be included in the 990 response.</p>
+            <p className="text-xs text-secondary-app">Add a note explaining the reason for rejection. This will be included in the 990 response.</p>
             <textarea
               autoFocus
               value={rejectNotes}
               onChange={e => setRejectNotes(e.target.value)}
               placeholder="e.g. No available vehicle for this route on the requested date..."
               rows={4}
-              className="w-full bg-input border border-app rounded-lg px-3 py-2.5 text-xs text-app placeholder-gray-600 outline-none focus:border-red-500/50 resize-none"
+              className="w-full bg-input border border-app rounded-lg px-3 py-2.5 text-xs text-app placeholder:text-muted-app outline-none focus:border-red-500/50 resize-none"
             />
           </div>
           <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-app">
@@ -969,22 +969,22 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">EDI 204</span>
               <span className="text-sm font-semibold text-app">{x12ViewMode === 'x12' ? 'JSON → ANSI X12' : 'Raw JSON'}</span>
-              <span className="text-xs font-mono text-gray-500">{tender.tenderId}</span>
+              <span className="text-xs font-mono text-muted-app">{tender.tenderId}</span>
             </div>
             <div className="flex items-center gap-2">
               {/* Toggle */}
               <div className="flex items-center bg-input border border-app rounded-lg overflow-hidden text-xs">
                 <button type="button" onClick={() => setX12ViewMode('json')}
-                  className={`px-3 py-1.5 transition cursor-pointer border-none ${x12ViewMode === 'json' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-app'}`}>
+                  className={`px-3 py-1.5 transition cursor-pointer border-none ${x12ViewMode === 'json' ? 'bg-blue-600 text-white' : 'text-secondary-app hover:text-app'}`}>
                   JSON
                 </button>
                 <button type="button" onClick={() => setX12ViewMode('x12')}
-                  className={`px-3 py-1.5 transition cursor-pointer border-none ${x12ViewMode === 'x12' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-app'}`}>
+                  className={`px-3 py-1.5 transition cursor-pointer border-none ${x12ViewMode === 'x12' ? 'bg-blue-600 text-white' : 'text-secondary-app hover:text-app'}`}>
                   ANSI X12
                 </button>
               </div>
               <button type="button" onClick={copyX12}
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-input border border-app hover:bg-hover transition cursor-pointer text-gray-400 hover:text-app">
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-input border border-app hover:bg-hover transition cursor-pointer text-secondary-app hover:text-app">
                 {copied
                   ? <><ClipboardCheck size={12} className="text-green-400" /><span className="text-green-400">Copied!</span></>
                   : <><Copy size={12} /> Copy</>}
@@ -994,11 +994,11 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
           </div>
           <div className="overflow-y-auto flex-1 p-4">
             {x12ViewMode === 'x12' ? (
-              <pre className="text-xs text-green-400 font-mono bg-black/40 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
+              <pre className="text-xs font-mono bg-code-block text-code-x12 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
                 {generateX12_204(tender)}
               </pre>
             ) : (
-              <pre className="text-xs text-yellow-300 font-mono bg-black/40 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
+              <pre className="text-xs font-mono bg-code-block text-code-json rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
                 {tender.rawJson
                   ? JSON.stringify(tender.rawJson, null, 2)
                   : JSON.stringify({
@@ -1029,23 +1029,23 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
             <div className="flex items-center gap-2">
               <span className={`text-xs font-bold px-2 py-0.5 rounded ${tender.status === 'Accepted' ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10'}`}>EDI 990</span>
               <span className="text-sm font-semibold text-app">990 Response — {tender.status}</span>
-              <span className="text-xs font-mono text-gray-500">{tender.tenderId}</span>
+              <span className="text-xs font-mono text-muted-app">{tender.tenderId}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center bg-input border border-app rounded-lg overflow-hidden text-xs">
                 <button type="button" onClick={() => setView990Mode('json')}
-                  className={`px-3 py-1.5 transition cursor-pointer border-none ${view990Mode === 'json' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-app'}`}>
+                  className={`px-3 py-1.5 transition cursor-pointer border-none ${view990Mode === 'json' ? 'bg-blue-600 text-white' : 'text-secondary-app hover:text-app'}`}>
                   JSON
                 </button>
                 <button type="button" onClick={() => setView990Mode('x12')}
-                  className={`px-3 py-1.5 transition cursor-pointer border-none ${view990Mode === 'x12' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-app'}`}>
+                  className={`px-3 py-1.5 transition cursor-pointer border-none ${view990Mode === 'x12' ? 'bg-blue-600 text-white' : 'text-secondary-app hover:text-app'}`}>
                   ANSI X12
                 </button>
               </div>
               <button type="button" onClick={() => {
                 const text = view990Mode === 'x12' ? generateX12_990(tender) : JSON.stringify(get990Json(tender), null, 2);
                 navigator.clipboard.writeText(text).then(() => { setCopied990(true); setTimeout(() => setCopied990(false), 2000); });
-              }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-input border border-app hover:bg-hover transition cursor-pointer text-gray-400 hover:text-app">
+              }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-input border border-app hover:bg-hover transition cursor-pointer text-secondary-app hover:text-app">
                 {copied990
                   ? <><ClipboardCheck size={12} className="text-green-400" /><span className="text-green-400">Copied!</span></>
                   : <><Copy size={12} /> Copy</>}
@@ -1055,11 +1055,11 @@ function TenderDetail({ tender: initialTender, vehicles, onClose, onRespond }) {
           </div>
           <div className="overflow-y-auto flex-1 p-4">
             {view990Mode === 'x12' ? (
-              <pre className="text-xs text-green-400 font-mono bg-black/40 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
+              <pre className="text-xs font-mono bg-code-block text-code-x12 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
                 {generateX12_990(tender)}
               </pre>
             ) : (
-              <pre className="text-xs text-yellow-300 font-mono bg-black/40 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
+              <pre className="text-xs font-mono bg-code-block text-code-json rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
                 {JSON.stringify(get990Json(tender), null, 2)}
               </pre>
             )}
@@ -1135,7 +1135,7 @@ function LoadTenders() {
   const fmt = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
   const fmtTime = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date(d).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }) : '—';
 
-  if (loading) return <div className="text-gray-500 text-sm py-10 text-center">Loading...</div>;
+  if (loading) return <div className="text-muted-app text-sm py-10 text-center">Loading...</div>;
   if (error)   return <div className="text-red-400 text-sm py-10 text-center">{error}</div>;
 
   return (
@@ -1143,7 +1143,7 @@ function LoadTenders() {
       <div className="bg-card rounded-xl border border-app flex flex-col h-full">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-app shrink-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <Inbox size={14} className="text-gray-400" />
+            <Inbox size={14} className="text-secondary-app" />
             <span className="font-semibold text-sm text-app">Incoming Load Tenders (EDI 204)</span>
             {pending > 0 && (
               <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">{pending} awaiting response</span>
@@ -1156,7 +1156,7 @@ function LoadTenders() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search shipment / order ID..."
-              className="text-xs px-3 py-1.5 rounded-lg bg-input border border-app text-app placeholder-gray-600 focus:outline-none focus:border-blue-500 w-44 mr-2"
+              className="text-xs px-3 py-1.5 rounded-lg bg-input border border-app text-app placeholder:text-muted-app focus:outline-none focus:border-blue-500 w-44 mr-2"
             />
             {[
               { label: 'All',      count: tenders.length },
@@ -1171,7 +1171,7 @@ function LoadTenders() {
                 className={`text-xs px-3 py-1.5 rounded-lg font-medium transition cursor-pointer border
                   ${filterStatus === label
                     ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-input text-gray-400 border-app hover:text-app hover:bg-hover'}`}
+                    : 'bg-input text-secondary-app border-app hover:text-app hover:bg-hover'}`}
               >
                 {label} <span className="opacity-70">({count})</span>
               </button>
@@ -1182,7 +1182,7 @@ function LoadTenders() {
         <div className="overflow-auto flex-1">
           <table className="w-full text-sm min-w-[1100px]">
             <thead className="sticky top-0 bg-card z-10">
-              <tr className="text-gray-500 text-xs border-b border-app">
+              <tr className="text-muted-app text-xs border-b border-app">
                 <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Shipment ID / Order ID</th>
                 <th className="text-left px-4 py-2.5 font-medium">Partner</th>
                 <th className="text-left px-4 py-2.5 font-medium">Pickup</th>
@@ -1195,18 +1195,18 @@ function LoadTenders() {
             </thead>
             <tbody>
               {displayed.length === 0 && (
-                <tr><td colSpan={8} className="text-center py-10 text-gray-600 text-sm">No load tenders found.</td></tr>
+                <tr><td colSpan={8} className="text-center py-10 text-muted-app text-sm">No load tenders found.</td></tr>
               )}
               {displayed.map(t => (
                 <tr key={t._id} className="border-b border-subtle hover:bg-hover transition">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-400 whitespace-nowrap">
+                  <td className="px-4 py-3 font-mono text-xs text-secondary-app whitespace-nowrap">
                     <p>{t.shipmentId ?? '—'}</p>
-                    {t.orderId && <p className="text-gray-600 mt-0.5">{t.orderId}</p>}
+                    {t.orderId && <p className="text-muted-app mt-0.5">{t.orderId}</p>}
                   </td>
                   <td className="px-4 py-3 text-xs text-app font-medium whitespace-nowrap">{t.partner?.name}</td>
-                  <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{fmt(t.pickupDate)}</td>
-                  <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{fmt(t.deliveryDate)}</td>
-                  <td className="px-4 py-3 text-xs text-gray-300 whitespace-nowrap">{t.route}</td>
+                  <td className="px-4 py-3 text-xs text-secondary-app whitespace-nowrap">{fmt(t.pickupDate)}</td>
+                  <td className="px-4 py-3 text-xs text-secondary-app whitespace-nowrap">{fmt(t.deliveryDate)}</td>
+                  <td className="px-4 py-3 text-xs text-secondary-app whitespace-nowrap">{t.route}</td>
                   <td className="px-4 py-3">
                     {t.status === 'Pending'
                       ? <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${STATUS_STYLE[t.status]}`}>{t.status}</span>
@@ -1222,13 +1222,13 @@ function LoadTenders() {
                         </button>
                     }
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{fmtTime(t.createdAt)}</td>
+                  <td className="px-4 py-3 text-xs text-muted-app whitespace-nowrap">{fmtTime(t.createdAt)}</td>
                   <td className="px-4 py-3 text-right">
                     <button
                       type="button"
                       onClick={() => setSelected(t)}
                       className={`text-xs px-3 py-1.5 rounded-lg font-medium transition cursor-pointer border-none whitespace-nowrap
-                        ${t.status === 'Pending' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-input hover:bg-white/10 text-gray-400 border border-app'}`}
+                        ${t.status === 'Pending' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-input hover:bg-hover text-secondary-app border border-app'}`}
                     >
                       {t.status === 'Pending' ? 'Respond' : 'View'}
                     </button>
@@ -1257,23 +1257,23 @@ function LoadTenders() {
               <div className="flex items-center gap-2">
                 <span className={`text-xs font-bold px-2 py-0.5 rounded ${view990Tender.status === 'Accepted' ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10'}`}>EDI 990</span>
                 <span className="text-sm font-semibold text-app">990 Response — {view990Tender.status}</span>
-                <span className="text-xs font-mono text-gray-500">{view990Tender.tenderId}</span>
+                <span className="text-xs font-mono text-muted-app">{view990Tender.tenderId}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex items-center bg-input border border-app rounded-lg overflow-hidden text-xs">
                   <button type="button" onClick={() => setView990Mode('json')}
-                    className={`px-3 py-1.5 transition cursor-pointer border-none ${view990Mode === 'json' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-app'}`}>
+                    className={`px-3 py-1.5 transition cursor-pointer border-none ${view990Mode === 'json' ? 'bg-blue-600 text-white' : 'text-secondary-app hover:text-app'}`}>
                     JSON
                   </button>
                   <button type="button" onClick={() => setView990Mode('x12')}
-                    className={`px-3 py-1.5 transition cursor-pointer border-none ${view990Mode === 'x12' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-app'}`}>
+                    className={`px-3 py-1.5 transition cursor-pointer border-none ${view990Mode === 'x12' ? 'bg-blue-600 text-white' : 'text-secondary-app hover:text-app'}`}>
                     ANSI X12
                   </button>
                 </div>
                 <button type="button" onClick={() => {
                   const text = view990Mode === 'x12' ? generateX12_990(view990Tender) : JSON.stringify(get990Json(view990Tender), null, 2);
                   navigator.clipboard.writeText(text).then(() => { setCopied990(true); setTimeout(() => setCopied990(false), 2000); });
-                }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-input border border-app hover:bg-hover transition cursor-pointer text-gray-400 hover:text-app">
+                }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-input border border-app hover:bg-hover transition cursor-pointer text-secondary-app hover:text-app">
                   {copied990
                     ? <><ClipboardCheck size={12} className="text-green-400" /><span className="text-green-400">Copied!</span></>
                     : <><Copy size={12} /> Copy</>}
@@ -1283,11 +1283,11 @@ function LoadTenders() {
             </div>
             <div className="overflow-y-auto flex-1 p-4">
               {view990Mode === 'x12' ? (
-                <pre className="text-xs text-green-400 font-mono bg-black/40 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
+                <pre className="text-xs font-mono bg-code-block text-code-x12 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
                   {generateX12_990(view990Tender)}
                 </pre>
               ) : (
-                <pre className="text-xs text-yellow-300 font-mono bg-black/40 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
+                <pre className="text-xs font-mono bg-code-block text-code-json rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
                   {JSON.stringify(get990Json(view990Tender), null, 2)}
                 </pre>
               )}

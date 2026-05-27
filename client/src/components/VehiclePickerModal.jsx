@@ -32,9 +32,9 @@ export default function VehiclePickerModal({ vehicles, selected, loadWeight, onS
           <div className="flex items-center gap-2">
             <Truck size={15} className="text-blue-400" />
             <span className="font-semibold text-sm text-app">Select Vehicle</span>
-            {loadWeight && <span className="text-xs text-gray-500">· Load: {loadWeight}</span>}
+            {loadWeight && <span className="text-xs text-muted-app">· Load: {loadWeight}</span>}
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-app bg-transparent border-none cursor-pointer p-1">
+          <button onClick={onClose} className="text-muted-app hover:text-app bg-transparent border-none cursor-pointer p-1">
             <X size={16} />
           </button>
         </div>
@@ -42,7 +42,7 @@ export default function VehiclePickerModal({ vehicles, selected, loadWeight, onS
         {/* Grid */}
         <div className="overflow-y-auto flex-1 p-4">
           {vehicles.length === 0 ? (
-            <p className="text-xs text-gray-500 text-center py-10">No vehicles in fleet.</p>
+            <p className="text-xs text-muted-app text-center py-10">No vehicles in fleet.</p>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {vehicles.map(v => {
@@ -64,7 +64,7 @@ export default function VehiclePickerModal({ vehicles, selected, loadWeight, onS
                       {v.image ? (
                         <img src={api.imageUrl(v.image)} alt={v.name} className="w-full h-full object-contain p-2" />
                       ) : (
-                        <Truck size={36} className="text-gray-700" />
+                        <Truck size={36} className="text-muted-app" />
                       )}
                     </div>
 
@@ -74,13 +74,13 @@ export default function VehiclePickerModal({ vehicles, selected, loadWeight, onS
                         <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${VEHICLE_TYPE_STYLE[v.type] ?? 'bg-gray-500/20 text-gray-400'}`}>
                           {v.type}
                         </span>
-                        <span className="flex items-center gap-1 text-[10px] text-gray-500">
+                        <span className="flex items-center gap-1 text-[10px] text-muted-app">
                           <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[v.status] ?? 'bg-gray-500'}`} />
                           {v.status}
                         </span>
                       </div>
                       <p className="text-xs font-semibold text-app truncate">{v.name}</p>
-                      <p className="text-[10px] text-gray-500">{v.plate} · {v.capacity}</p>
+                      <p className="text-[10px] text-muted-app">{v.plate} · {v.capacity}</p>
                       {!check.ok && (
                         <p className="text-[10px] text-red-400 leading-tight">{check.message}</p>
                       )}

@@ -8,7 +8,7 @@ import { usePolling } from '../hooks/usePolling';
 const STATUS_OPTIONS = ['Pending', 'Pickup', 'In Transit', 'Delivered', 'Exception'];
 
 const STATUS_STYLE = {
-  'Pending':    'bg-gray-500/20 text-gray-400',
+  'Pending':    'bg-gray-500/20 text-secondary-app',
   'Pickup':     'bg-yellow-500/20 text-yellow-400',
   'In Transit': 'bg-blue-500/20 text-blue-400',
   'Delivered':  'bg-green-500/20 text-green-400',
@@ -105,7 +105,7 @@ function MilestoneTracker({ status, onViewEdi }) {
               className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-full transition
                 ${current ? 'bg-blue-600 text-white font-semibold'
                 : done    ? 'bg-green-500/20 text-green-400'
-                          : 'bg-input text-gray-600'}
+                          : 'bg-input text-muted-app'}
                 ${hasEdi ? 'cursor-pointer hover:ring-1 hover:ring-green-400/40' : ''}`}>
               <Icon size={10} />
               <span className="hidden lg:inline">{label}</span>
@@ -135,7 +135,7 @@ function ConfirmStatusModal({ pending, saving, onConfirm, onCancel }) {
           </div>
           <div>
             <p className="font-semibold text-app text-sm">{skipping ? 'Cannot skip status step' : 'Update shipment status?'}</p>
-            <p className="text-xs text-gray-500 mt-0.5 font-mono">{pending.shipmentId}</p>
+            <p className="text-xs text-muted-app mt-0.5 font-mono">{pending.shipmentId}</p>
           </div>
         </div>
         <div className="px-6 py-5 space-y-4">
@@ -145,15 +145,15 @@ function ConfirmStatusModal({ pending, saving, onConfirm, onCancel }) {
               <p>You must set the status to <span className="font-semibold text-red-300">{required}</span> before moving to <span className="font-semibold text-red-300">{pending.to}</span>.</p>
             </div>
           ) : (
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-secondary-app">
               Are you sure you want to change the status for{' '}
               <span className="text-app font-medium">{pending.route}</span>?
             </p>
           )}
           <div className="flex items-center justify-center gap-3">
-            <span className={`text-xs px-2.5 py-1 rounded-full ${STATUS_STYLE[pending.from] ?? 'bg-gray-500/20 text-gray-400'}`}>{pending.from}</span>
-            <span className="text-gray-600 text-xs">→</span>
-            <span className={`text-xs px-2.5 py-1 rounded-full ${STATUS_STYLE[pending.to] ?? 'bg-gray-500/20 text-gray-400'}`}>{pending.to}</span>
+            <span className={`text-xs px-2.5 py-1 rounded-full ${STATUS_STYLE[pending.from] ?? 'bg-gray-500/20 text-secondary-app'}`}>{pending.from}</span>
+            <span className="text-muted-app text-xs">→</span>
+            <span className={`text-xs px-2.5 py-1 rounded-full ${STATUS_STYLE[pending.to] ?? 'bg-gray-500/20 text-secondary-app'}`}>{pending.to}</span>
           </div>
         </div>
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-app">
@@ -216,7 +216,7 @@ function StatusDropdown({ value, onChange }) {
           {STATUS_OPTIONS.map(s => (
             <button key={s} onClick={() => { onChange(s); setOpen(false); }}
               className={`w-full text-left px-3 py-2 text-xs hover:bg-hover transition cursor-pointer border-none
-                ${value === s ? 'text-blue-400 bg-blue-500/10' : 'text-gray-300'}`}>
+                ${value === s ? 'text-blue-400 bg-blue-500/10' : 'text-secondary-app'}`}>
              {s}
             </button>
           ))}
@@ -283,7 +283,7 @@ function ShipmentsTable() {
     });
   };
 
-  if (loading) return <div className="text-gray-500 text-sm py-10 text-center">Loading...</div>;
+  if (loading) return <div className="text-muted-app text-sm py-10 text-center">Loading...</div>;
   if (error)   return <div className="text-red-400 text-sm py-10 text-center">{error}</div>;
 
   return (
@@ -293,7 +293,7 @@ function ShipmentsTable() {
       <div className="bg-card rounded-xl border border-app flex flex-col" style={{ maxHeight: '70vh' }}>
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-app shrink-0">
           <div className="flex items-center gap-2">
-            <Package size={14} className="text-gray-400" />
+            <Package size={14} className="text-secondary-app" />
             <span className="font-semibold text-sm text-app">Shipments</span>
             <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">
               {shipments.filter(s => s.status === 'In Transit').length} in transit
@@ -304,13 +304,13 @@ function ShipmentsTable() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search shipment ID..."
-            className="text-xs px-3 py-1.5 rounded-lg bg-input border border-app text-app placeholder-gray-600 focus:outline-none focus:border-blue-500 w-44"
+            className="text-xs px-3 py-1.5 rounded-lg bg-input border border-app text-app placeholder:text-muted-app focus:outline-none focus:border-blue-500 w-44"
           />
         </div>
         <div className="overflow-auto flex-1">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-card">
-              <tr className="text-gray-500 text-xs border-b border-app">
+              <tr className="text-muted-app text-xs border-b border-app">
                 <th className="text-left px-5 py-2.5 font-medium">Shipment ID</th>
                 <th className="text-left px-5 py-2.5 font-medium">Date</th>
                 <th className="text-left px-5 py-2.5 font-medium">Route</th>
@@ -323,21 +323,21 @@ function ShipmentsTable() {
             </thead>
             <tbody>
               {shipments.length === 0 && (
-                <tr><td colSpan={8} className="text-center py-10 text-gray-600 text-sm">No shipments yet.</td></tr>
+                <tr><td colSpan={8} className="text-center py-10 text-muted-app text-sm">No shipments yet.</td></tr>
               )}
               {shipments.filter(s =>
                 !search.trim() || (s.shipmentId ?? '').toLowerCase().includes(search.trim().toLowerCase())
               ).map(s => (
                 <tr key={s._id} className="border-b border-subtle hover:bg-hover transition">
-                  <td className="px-5 py-3.5 font-mono text-xs text-gray-400">{s.shipmentId}</td>
-                  <td className="px-5 py-3.5 text-xs text-gray-500">
+                  <td className="px-5 py-3.5 font-mono text-xs text-secondary-app">{s.shipmentId}</td>
+                  <td className="px-5 py-3.5 text-xs text-muted-app">
                     {s.createdAt ? new Date(s.createdAt).toLocaleDateString('en-PH', { month: '2-digit', day: '2-digit', year: 'numeric' }) : '—'}
                   </td>
                   <td className="px-5 py-3.5">
                     <p className="text-xs font-medium text-app">{s.route}</p>
-                    <p className="text-xs text-gray-500">{s.partner?.name}</p>
+                    <p className="text-xs text-muted-app">{s.partner?.name}</p>
                   </td>
-                  <td className="px-5 py-3.5 text-xs text-gray-400">
+                  <td className="px-5 py-3.5 text-xs text-secondary-app">
                     {s.estimatedDeliveryDate
                       ? new Date(s.estimatedDeliveryDate).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
                       : '—'}
@@ -348,7 +348,7 @@ function ShipmentsTable() {
                     setX12Shipment({ ...s, status: milestoneStatus });
                   }} /></td>
                   <td className="px-5 py-3.5">
-                    <span className={`text-xs px-2 py-1 rounded-full ${STATUS_STYLE[s.status] ?? 'bg-gray-500/20 text-gray-400'}`}>{s.status}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full ${STATUS_STYLE[s.status] ?? 'bg-gray-500/20 text-secondary-app'}`}>{s.status}</span>
                   </td>
                   <td className="px-5 py-3.5">
                     {s.edi214Sent
@@ -359,7 +359,7 @@ function ShipmentsTable() {
                         : <span className="text-xs flex items-center gap-1 text-purple-400 font-medium w-fit">
                             <CheckCircle2 size={10} /> 214 · {EDI_214_LABEL[s.status] ?? s.status}
                           </span>
-                      : <span className="text-xs text-gray-600">—</span>}
+                      : <span className="text-xs text-muted-app">—</span>}
                   </td>
                   <td className="px-5 py-3.5 text-right">
                     <StatusDropdown value={s.status} onChange={val => requestStatusChange(s._id, val)} />
@@ -379,22 +379,22 @@ function ShipmentsTable() {
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded shrink-0">EDI 214</span>
                 <span className="text-sm font-semibold text-app shrink-0">Shipment Status</span>
-                <span className="text-xs font-mono text-gray-500 truncate">{x12Shipment.shipmentId}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${STATUS_STYLE[x12Shipment.status] ?? 'bg-gray-500/20 text-gray-400'}`}>{x12Shipment.status}</span>
+                <span className="text-xs font-mono text-muted-app truncate">{x12Shipment.shipmentId}</span>
+                <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${STATUS_STYLE[x12Shipment.status] ?? 'bg-gray-500/20 text-secondary-app'}`}>{x12Shipment.status}</span>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <div className="flex items-center bg-input border border-app rounded-lg overflow-hidden text-xs">
                   <button type="button" onClick={() => setViewMode('json')}
-                    className={`px-3 py-1.5 transition cursor-pointer border-none ${viewMode === 'json' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-app'}`}>
+                    className={`px-3 py-1.5 transition cursor-pointer border-none ${viewMode === 'json' ? 'bg-blue-600 text-white' : 'text-secondary-app hover:text-app'}`}>
                     JSON
                   </button>
                   <button type="button" onClick={() => setViewMode('x12')}
-                    className={`px-3 py-1.5 transition cursor-pointer border-none ${viewMode === 'x12' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-app'}`}>
+                    className={`px-3 py-1.5 transition cursor-pointer border-none ${viewMode === 'x12' ? 'bg-blue-600 text-white' : 'text-secondary-app hover:text-app'}`}>
                     ANSI X12
                   </button>
                 </div>
                 <button type="button" onClick={() => copyContent(x12Shipment)}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-input border border-app hover:bg-hover transition cursor-pointer text-gray-400 hover:text-app">
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-input border border-app hover:bg-hover transition cursor-pointer text-secondary-app hover:text-app">
                   {copied
                     ? <><ClipboardCheck size={12} className="text-green-400" /><span className="text-green-400">Copied!</span></>
                     : <><Copy size={12} /> Copy</>}
@@ -405,11 +405,11 @@ function ShipmentsTable() {
             </div>
             <div className="overflow-y-auto flex-1 p-4">
               {viewMode === 'x12' ? (
-                <pre className="text-xs text-green-400 font-mono bg-black/40 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
+                <pre className="text-xs font-mono bg-code-block text-code-x12 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
                   {generateX12_214(x12Shipment)}
                 </pre>
               ) : (
-                <pre className="text-xs text-yellow-300 font-mono bg-black/40 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
+                <pre className="text-xs font-mono bg-code-block text-code-json rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
                   {JSON.stringify(getJson214(x12Shipment), null, 2)}
                 </pre>
               )}

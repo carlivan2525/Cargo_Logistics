@@ -83,10 +83,10 @@ function LogoutButton({ onLogout }) {
       onClick={handle}
       disabled={loading}
       title="Logout"
-      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition cursor-pointer border-none text-red-400 hover:bg-red-500/10 disabled:opacity-70"
+      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition cursor-pointer border-none text-red-200 hover:bg-sidebar-hover hover:text-red-100 disabled:opacity-70"
     >
       {loading
-        ? <span className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+        ? <span className="w-4 h-4 border-2 border-red-200 border-t-transparent rounded-full animate-spin flex-shrink-0" />
         : <LogOut size={15} className="flex-shrink-0" />}
       <span className="whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
         {loading ? 'Logging out...' : 'Logout'}
@@ -192,14 +192,14 @@ function Dashboard({ user, onLogout }) {
       {toastNode}
 
       {/* Sidebar */}
-      <aside className="group/sidebar relative z-20 flex-shrink-0 w-14 hover:w-60 transition-all duration-150 ease-out bg-card flex flex-col border-r border-app overflow-hidden">
+      <aside className="group/sidebar relative z-20 flex-shrink-0 w-14 hover:w-60 transition-all duration-150 ease-out bg-sidebar text-sidebar flex flex-col border-r border-sidebar overflow-hidden">
 
         {/* Brand — logo */}
-        <div className="flex items-center border-b border-app overflow-hidden h-[72px] flex-shrink-0 px-2">
+        <div className="flex items-center border-b border-sidebar overflow-hidden h-[72px] flex-shrink-0 px-2">
           <img src={logo} alt="CarGO Logo" className="h-10 w-10 object-contain flex-shrink-0" />
           <span
-            className="whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 ml-2.5 text-sm font-bold tracking-wide"
-            style={{ fontFamily: "'Rajdhani', sans-serif", color: '#ffffff' }}
+            className="whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 ml-2.5 text-sm font-bold tracking-wide text-sidebar"
+            style={{ fontFamily: "'Rajdhani', sans-serif" }}
           >
             Car<span style={{ textTransform: 'uppercase' }}>GO</span> Logistics
           </span>
@@ -209,7 +209,7 @@ function Dashboard({ user, onLogout }) {
         <nav className="flex-1 overflow-y-auto px-1.5 py-4 space-y-1">
           {navWithCounts.map(({ title, items }, sectionIdx) => (
             <div key={title}>
-              {sectionIdx > 0 && <div className="border-t border-app my-2" />}
+              {sectionIdx > 0 && <div className="border-t border-sidebar my-2" />}
               <ul className="space-y-0.5">
                 {items.map(({ icon: Icon, label, badge, badgeRed, badgeYellow }) => (
                   <li key={label}>
@@ -217,7 +217,7 @@ function Dashboard({ user, onLogout }) {
                       onClick={() => setActiveNav(label)}
                       title={label}
                       className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition cursor-pointer border-none
-                        ${activeNav === label ? 'bg-blue-600 text-white font-medium' : 'text-secondary-app hover:bg-hover hover:text-app'}`}
+                        ${activeNav === label ? 'bg-sidebar-active text-sidebar font-medium' : 'text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar'}`}
                     >
                       <span className="flex items-center gap-2.5 min-w-0">
                         <Icon size={15} className="flex-shrink-0" />
@@ -249,8 +249,8 @@ function Dashboard({ user, onLogout }) {
         </div>
 
         {/* Footer */}
-        <div className="px-2 py-3 border-t border-app overflow-hidden">
-          <p className="text-[10px] text-gray-600 whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 text-center">
+        <div className="px-2 py-3 border-t border-sidebar overflow-hidden">
+          <p className="text-[10px] text-sidebar-muted whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 text-center">
             © 2026 CarGO Logistics Services
           </p>
         </div>

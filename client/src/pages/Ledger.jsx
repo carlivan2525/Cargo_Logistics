@@ -61,7 +61,7 @@ function WithdrawModal({ balance, onConfirm, onCancel }) {
             <p className="font-semibold text-app text-sm">
               {step === 1 ? 'Withdraw funds' : 'Payment method'}
             </p>
-            <p className="text-xs text-gray-500 mt-0.5">Available: ₱{balance.toLocaleString('en-PH')}</p>
+            <p className="text-xs text-muted-app mt-0.5">Available: ₱{balance.toLocaleString('en-PH')}</p>
           </div>
         </div>
 
@@ -69,9 +69,9 @@ function WithdrawModal({ balance, onConfirm, onCancel }) {
         {step === 1 && (
           <div className="px-6 py-5 space-y-3">
             <div>
-              <label className="text-xs text-gray-400 block mb-1.5">Amount to withdraw</label>
+              <label className="text-xs text-secondary-app block mb-1.5">Amount to withdraw</label>
               <div className="flex items-center gap-2 bg-input border border-app rounded-lg px-3 py-2">
-                <span className="text-xs text-gray-500">₱</span>
+                <span className="text-xs text-muted-app">₱</span>
                 <input
                   type="number" min="1" max={balance} value={amount}
                   onChange={e => { setAmount(e.target.value); setError(''); }}
@@ -92,7 +92,7 @@ function WithdrawModal({ balance, onConfirm, onCancel }) {
         {/* Step 2 — Payment method */}
         {step === 2 && (
           <div className="px-6 py-5 space-y-4">
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-secondary-app">
               Withdrawing <span className="text-app font-medium">₱{parseFloat(amount).toLocaleString('en-PH')}</span> — choose how to receive it.
             </p>
 
@@ -104,7 +104,7 @@ function WithdrawModal({ balance, onConfirm, onCancel }) {
                   className={`flex-1 py-2 rounded-lg text-xs font-medium border transition cursor-pointer
                     ${method === m
                       ? 'bg-orange-600 border-orange-600 text-white'
-                      : 'bg-input border-app text-gray-400 hover:text-app'}`}>
+                      : 'bg-input border-app text-secondary-app hover:text-app'}`}>
                   {m === 'gcash' ? 'GCash' : 'Credit Card'}
                 </button>
               ))}
@@ -113,9 +113,9 @@ function WithdrawModal({ balance, onConfirm, onCancel }) {
             {/* GCash fields */}
             {method === 'gcash' && (
               <div>
-                <label className="text-xs text-gray-400 block mb-1.5">GCash number</label>
+                <label className="text-xs text-secondary-app block mb-1.5">GCash number</label>
                 <div className="flex items-center gap-2 bg-input border border-app rounded-lg px-3 py-2">
-                  <span className="text-xs text-gray-500">+63</span>
+                  <span className="text-xs text-muted-app">+63</span>
                   <input
                     type="tel" maxLength={11} value={gcashNum}
                     onChange={e => { setGcashNum(e.target.value.replace(/\D/g, '').slice(0, 11)); setError(''); }}
@@ -131,7 +131,7 @@ function WithdrawModal({ balance, onConfirm, onCancel }) {
             {method === 'card' && (
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs text-gray-400 block mb-1.5">Card number</label>
+                  <label className="text-xs text-secondary-app block mb-1.5">Card number</label>
                   <input
                     type="text" value={cardNum}
                     onChange={e => { setCardNum(formatCard(e.target.value)); setError(''); }}
@@ -141,7 +141,7 @@ function WithdrawModal({ balance, onConfirm, onCancel }) {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-400 block mb-1.5">Cardholder name</label>
+                  <label className="text-xs text-secondary-app block mb-1.5">Cardholder name</label>
                   <input
                     type="text" value={cardName}
                     onChange={e => { setCardName(e.target.value); setError(''); }}
@@ -150,7 +150,7 @@ function WithdrawModal({ balance, onConfirm, onCancel }) {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-400 block mb-1.5">Expiry date</label>
+                  <label className="text-xs text-secondary-app block mb-1.5">Expiry date</label>
                   <input
                     type="text" value={cardExp} maxLength={5}
                     onChange={e => { setCardExp(formatExp(e.target.value)); setError(''); }}

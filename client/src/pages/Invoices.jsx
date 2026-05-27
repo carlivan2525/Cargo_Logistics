@@ -8,7 +8,7 @@ const STATUS_STYLE = {
   'Paid':    'bg-green-500/20 text-green-400',
   'Pending': 'bg-yellow-500/20 text-yellow-400',
   'Overdue': 'bg-red-500/20 text-red-400',
-  'Draft':   'bg-gray-500/20 text-gray-400',
+  'Draft':   'bg-gray-500/20 text-secondary-app',
 };
 
 function generateX12_820(inv) {
@@ -202,7 +202,7 @@ function Invoices() {
   const fmtDate = d =>
     d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 
-  if (loading) return <div className="text-gray-500 text-sm py-10 text-center">Loading...</div>;
+  if (loading) return <div className="text-muted-app text-sm py-10 text-center">Loading...</div>;
 
   return (
     <>
@@ -220,7 +220,7 @@ function Invoices() {
             <Icon size={18} className={color} />
             <div>
               <p className="text-2xl font-bold text-app">{value}</p>
-              <p className="text-xs text-gray-400">{label} invoices</p>
+              <p className="text-xs text-secondary-app">{label} invoices</p>
             </div>
           </div>
         ))}
@@ -232,7 +232,7 @@ function Invoices() {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-app shrink-0">
           <div className="flex items-center gap-2">
-            <FileText size={14} className="text-gray-400" />
+            <FileText size={14} className="text-secondary-app" />
             <span className="font-semibold text-sm text-app">Invoices</span>
             {overdue > 0 && (
               <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">{overdue} overdue</span>
@@ -240,13 +240,13 @@ function Invoices() {
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 bg-input border border-app rounded-lg px-3 py-1.5">
-              <Search size={12} className="text-gray-500" />
+              <Search size={12} className="text-muted-app" />
               <input type="text" placeholder="Search invoices..." value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="bg-transparent text-xs text-gray-300 placeholder-gray-600 outline-none w-36" />
+                className="bg-transparent text-xs text-secondary-app placeholder:text-muted-app outline-none w-36" />
             </div>
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-              className="bg-input border border-app text-xs text-gray-300 rounded-lg px-2 py-1.5 outline-none cursor-pointer">
+              className="bg-input border border-app text-xs text-secondary-app rounded-lg px-2 py-1.5 outline-none cursor-pointer">
               <option value="All">All Status</option>
               {['Paid', 'Pending', 'Overdue', 'Draft'].map(s => <option key={s} value={s}>{s}</option>)}
             </select>
@@ -257,7 +257,7 @@ function Invoices() {
         <div className="overflow-auto flex-1">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-card z-10">
-              <tr className="text-gray-500 text-xs border-b border-app">
+              <tr className="text-muted-app text-xs border-b border-app">
                 <th className="text-left px-5 py-2.5 font-medium">Invoice ID</th>
                 <th className="text-left px-5 py-2.5 font-medium">Partner</th>
                 <th className="text-left px-5 py-2.5 font-medium">Shipment</th>
@@ -271,14 +271,14 @@ function Invoices() {
             <tbody>
               {filtered.map(inv => (
                 <tr key={inv._id} className="border-b border-subtle hover:bg-hover transition">
-                  <td className="px-5 py-3 font-mono text-xs text-gray-400">{inv.invoiceId}</td>
+                  <td className="px-5 py-3 font-mono text-xs text-secondary-app">{inv.invoiceId}</td>
                   <td className="px-5 py-3 text-sm text-app font-medium">{inv.partner?.name}</td>
-                  <td className="px-5 py-3 text-xs text-gray-400 font-mono">{inv.shipment?.shipmentId}</td>
+                  <td className="px-5 py-3 text-xs text-secondary-app font-mono">{inv.shipment?.shipmentId}</td>
                   <td className="px-5 py-3 text-xs text-app font-semibold">{fmtAmt(inv.amount)}</td>
-                  <td className="px-5 py-3 text-xs text-gray-400">
+                  <td className="px-5 py-3 text-xs text-secondary-app">
                     {inv.createdAt ? new Date(inv.createdAt).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                   </td>
-                  <td className={`px-5 py-3 text-xs ${inv.status === 'Overdue' ? 'text-red-400 font-medium' : 'text-gray-500'}`}>
+                  <td className={`px-5 py-3 text-xs ${inv.status === 'Overdue' ? 'text-red-400 font-medium' : 'text-muted-app'}`}>
                     {fmtDate(inv.dueDate)}
                   </td>
                   <td className="px-5 py-3">
@@ -293,14 +293,14 @@ function Invoices() {
                   </td>
                   <td className="px-5 py-3 text-right">
                     <button onClick={() => setViewInvoice(inv)}
-                      className="flex items-center gap-1 text-xs text-gray-400 hover:text-app transition cursor-pointer bg-transparent border-none ml-auto">
+                      className="flex items-center gap-1 text-xs text-secondary-app hover:text-app transition cursor-pointer bg-transparent border-none ml-auto">
                       <Eye size={11} /> View
                     </button>
                   </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} className="text-center py-10 text-gray-600 text-sm">No invoices found.</td></tr>
+                <tr><td colSpan={8} className="text-center py-10 text-muted-app text-sm">No invoices found.</td></tr>
               )}
             </tbody>
           </table>
@@ -315,30 +315,30 @@ function Invoices() {
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-app">
             <div className="flex items-center gap-2">
-              <FileText size={14} className="text-gray-400" />
+              <FileText size={14} className="text-secondary-app" />
               <span className="font-semibold text-sm text-app">Invoice</span>
-              <span className="text-xs font-mono text-gray-500">{viewInvoice.invoiceId}</span>
+              <span className="text-xs font-mono text-muted-app">{viewInvoice.invoiceId}</span>
             </div>
-            <button onClick={() => setViewInvoice(null)} className="text-gray-500 hover:text-app bg-transparent border-none cursor-pointer"><X size={15} /></button>
+            <button onClick={() => setViewInvoice(null)} className="text-muted-app hover:text-app bg-transparent border-none cursor-pointer"><X size={15} /></button>
           </div>
 
           {/* Details */}
           <div className="px-6 py-4 space-y-3">
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <div><p className="text-gray-500 mb-0.5">Partner</p><p className="text-app font-medium">{viewInvoice.partner?.name}</p></div>
-              <div><p className="text-gray-500 mb-0.5">Shipment</p><p className="text-app font-mono">{viewInvoice.shipment?.shipmentId}</p></div>
-              <div><p className="text-gray-500 mb-0.5">Amount</p><p className="text-app font-semibold">{fmtAmt(viewInvoice.amount)}</p></div>
-              <div><p className="text-gray-500 mb-0.5">Created</p><p className="text-app">{viewInvoice.createdAt ? new Date(viewInvoice.createdAt).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</p></div>
-              <div><p className="text-gray-500 mb-0.5">Due Date</p><p className={viewInvoice.status === 'Overdue' ? 'text-red-400 font-medium' : 'text-app'}>{fmtDate(viewInvoice.dueDate)}</p></div>
-              <div><p className="text-gray-500 mb-0.5">Status</p>
+              <div><p className="text-muted-app mb-0.5">Partner</p><p className="text-app font-medium">{viewInvoice.partner?.name}</p></div>
+              <div><p className="text-muted-app mb-0.5">Shipment</p><p className="text-app font-mono">{viewInvoice.shipment?.shipmentId}</p></div>
+              <div><p className="text-muted-app mb-0.5">Amount</p><p className="text-app font-semibold">{fmtAmt(viewInvoice.amount)}</p></div>
+              <div><p className="text-muted-app mb-0.5">Created</p><p className="text-app">{viewInvoice.createdAt ? new Date(viewInvoice.createdAt).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</p></div>
+              <div><p className="text-muted-app mb-0.5">Due Date</p><p className={viewInvoice.status === 'Overdue' ? 'text-red-400 font-medium' : 'text-app'}>{fmtDate(viewInvoice.dueDate)}</p></div>
+              <div><p className="text-muted-app mb-0.5">Status</p>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLE[viewInvoice.status]}`}>{viewInvoice.status}</span>
               </div>
-              <div><p className="text-gray-500 mb-0.5">EDI</p>
+              <div><p className="text-muted-app mb-0.5">EDI</p>
                 {viewInvoice.ediSent && viewInvoice.edi997Sent
                   ? <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 font-medium">210 & 997 Sent</span>
                   : viewInvoice.ediSent
                     ? <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-medium">210 Sent</span>
-                    : <span className="text-xs text-gray-600">—</span>}
+                    : <span className="text-xs text-muted-app">—</span>}
               </div>
             </div>
           </div>
@@ -346,7 +346,7 @@ function Invoices() {
           {/* Actions */}
           <div className="flex items-center gap-2 px-6 py-4 border-t border-app">
             <button onClick={() => { setCopied(false); setEdiTab('210'); setViewMode('x12'); setX12Invoice(viewInvoice); setViewInvoice(null); }}
-              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-input border border-app text-gray-400 hover:text-app transition cursor-pointer">
+              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-input border border-app text-secondary-app hover:text-app transition cursor-pointer">
               <Copy size={11} /> View X12
             </button>
             {viewInvoice.status === 'Paid' && (
@@ -379,22 +379,22 @@ function Invoices() {
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded">EDI</span>
               <span className="text-sm font-semibold text-app">Message Viewer</span>
-              <span className="text-xs font-mono text-gray-500">{x12Invoice.invoiceId}</span>
+              <span className="text-xs font-mono text-muted-app">{x12Invoice.invoiceId}</span>
             </div>
             <div className="flex items-center gap-2">
               {/* JSON / X12 toggle */}
               <div className="flex items-center bg-input border border-app rounded-lg overflow-hidden text-xs">
                 <button type="button" onClick={() => setViewMode('json')}
-                  className={`px-3 py-1.5 transition cursor-pointer border-none ${viewMode === 'json' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-app'}`}>
+                  className={`px-3 py-1.5 transition cursor-pointer border-none ${viewMode === 'json' ? 'bg-blue-600 text-white' : 'text-secondary-app hover:text-app'}`}>
                   JSON
                 </button>
                 <button type="button" onClick={() => setViewMode('x12')}
-                  className={`px-3 py-1.5 transition cursor-pointer border-none ${viewMode === 'x12' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-app'}`}>
+                  className={`px-3 py-1.5 transition cursor-pointer border-none ${viewMode === 'x12' ? 'bg-blue-600 text-white' : 'text-secondary-app hover:text-app'}`}>
                   ANSI X12
                 </button>
               </div>
               <button type="button" onClick={() => copyX12(x12Invoice)}
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-input border border-app hover:bg-hover transition cursor-pointer text-gray-400 hover:text-app">
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-input border border-app hover:bg-hover transition cursor-pointer text-secondary-app hover:text-app">
                 {copied
                   ? <><ClipboardCheck size={12} className="text-green-400" /><span className="text-green-400">Copied!</span></>
                   : <><Copy size={12} /> Copy</>}
@@ -408,13 +408,13 @@ function Invoices() {
           <div className="flex items-center gap-1 px-6 pt-3 shrink-0">
             <button type="button" onClick={() => setEdiTab('210')}
               className={`text-xs px-3 py-1.5 rounded-lg font-medium transition cursor-pointer border
-                ${ediTab === '210' ? 'bg-purple-600 text-white border-purple-600' : 'bg-input text-gray-400 border-app hover:text-app'}`}>
+                ${ediTab === '210' ? 'bg-purple-600 text-white border-purple-600' : 'bg-input text-secondary-app border-app hover:text-app'}`}>
               EDI 210 — Invoice
             </button>
             {x12Invoice.edi997Sent && (
               <button type="button" onClick={() => setEdiTab('997')}
                 className={`text-xs px-3 py-1.5 rounded-lg font-medium transition cursor-pointer border
-                  ${ediTab === '997' ? 'bg-purple-600 text-white border-purple-600' : 'bg-input text-gray-400 border-app hover:text-app'}`}>
+                  ${ediTab === '997' ? 'bg-purple-600 text-white border-purple-600' : 'bg-input text-secondary-app border-app hover:text-app'}`}>
                 EDI 997 — Acknowledgement
               </button>
             )}
@@ -423,11 +423,11 @@ function Invoices() {
           {/* Content */}
           <div className="overflow-y-auto flex-1 p-4">
             {viewMode === 'x12' ? (
-              <pre className="text-xs text-green-400 font-mono bg-black/40 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
+              <pre className="text-xs font-mono bg-code-block text-code-x12 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
                 {ediTab === '210' ? generateX12_210(x12Invoice) : generateX12_997(x12Invoice)}
               </pre>
             ) : (
-              <pre className="text-xs text-yellow-300 font-mono bg-black/40 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
+              <pre className="text-xs font-mono bg-code-block text-code-json rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
                 {JSON.stringify(ediTab === '210' ? getJson210(x12Invoice) : getJson997(x12Invoice), null, 2)}
               </pre>
             )}
@@ -443,23 +443,23 @@ function Invoices() {
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-xs font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded shrink-0">EDI 820</span>
               <span className="text-sm font-semibold text-app shrink-0">Payment Remittance</span>
-              <span className="text-xs font-mono text-gray-500 truncate">{x820Invoice.invoiceId}</span>
+              <span className="text-xs font-mono text-muted-app truncate">{x820Invoice.invoiceId}</span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <div className="flex items-center bg-input border border-app rounded-lg overflow-hidden text-xs">
                 <button type="button" onClick={() => { setViewMode('json'); }}
-                  className={`px-3 py-1.5 transition cursor-pointer border-none ${viewMode === 'json' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-app'}`}>
+                  className={`px-3 py-1.5 transition cursor-pointer border-none ${viewMode === 'json' ? 'bg-blue-600 text-white' : 'text-secondary-app hover:text-app'}`}>
                   JSON
                 </button>
                 <button type="button" onClick={() => setViewMode('x12')}
-                  className={`px-3 py-1.5 transition cursor-pointer border-none ${viewMode === 'x12' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-app'}`}>
+                  className={`px-3 py-1.5 transition cursor-pointer border-none ${viewMode === 'x12' ? 'bg-blue-600 text-white' : 'text-secondary-app hover:text-app'}`}>
                   ANSI X12
                 </button>
               </div>
               <button type="button" onClick={() => {
                 const text = viewMode === 'x12' ? generateX12_820(x820Invoice) : JSON.stringify(getJson820(x820Invoice), null, 2);
                 navigator.clipboard.writeText(text).then(() => { setCopied820(true); setTimeout(() => setCopied820(false), 2000); });
-              }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-input border border-app hover:bg-hover transition cursor-pointer text-gray-400 hover:text-app">
+              }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-input border border-app hover:bg-hover transition cursor-pointer text-secondary-app hover:text-app">
                 {copied820 ? <><ClipboardCheck size={12} className="text-green-400" /><span className="text-green-400">Copied!</span></> : <><Copy size={12} /> Copy</>}
               </button>
               <button type="button" onClick={() => setX820Invoice(null)}
@@ -468,11 +468,11 @@ function Invoices() {
           </div>
           <div className="overflow-y-auto flex-1 p-4">
             {viewMode === 'x12' ? (
-              <pre className="text-xs text-green-400 font-mono bg-black/40 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
+              <pre className="text-xs font-mono bg-code-block text-code-x12 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
                 {generateX12_820(x820Invoice)}
               </pre>
             ) : (
-              <pre className="text-xs text-yellow-300 font-mono bg-black/40 rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
+              <pre className="text-xs font-mono bg-code-block text-code-json rounded-xl p-4 whitespace-pre overflow-x-auto leading-relaxed text-left">
                 {JSON.stringify(getJson820(x820Invoice), null, 2)}
               </pre>
             )}

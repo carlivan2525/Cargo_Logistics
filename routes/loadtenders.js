@@ -472,9 +472,19 @@ router.post('/:id/respond', auth, async (req, res) => {
       } catch (e) { console.error('990 Bulldog failed:', e.message); }
     }
 
+    if (partnerName === 'newforge') {
+      try {
+        await fetch(process.env.EDI_NEWFORGE_990, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(edi990Payload),
+        });
+        console.log(`990 Newforge ${status}`);
+      } catch (e) { console.error('990 Newforge failed:', e.message); }
+    }
+
     // Any other partner with endpoints.edi990 configured
     if (partner?.endpoints?.edi990 &&
-        !['surplus', 'hiraya', 'bulldog exchange'].includes(partnerName)) {
+        !['surplus', 'hiraya', 'bulldog exchange', 'newforge'].includes(partnerName)) {
       try {
         await fetch(partner.endpoints.edi990, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },

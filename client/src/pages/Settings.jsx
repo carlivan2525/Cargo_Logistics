@@ -8,7 +8,7 @@ const VEHICLE_TYPES = ['Motorcycle', 'Sedan', 'SUV', 'L300', 'Closed Van', 'Elf 
 function PasswordField({ label, value, onChange, show, onToggle }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs text-gray-500">{label}</label>
+      <label className="text-xs text-muted-app">{label}</label>
       <div className="relative">
         <input
           type={show ? 'text' : 'password'}
@@ -17,7 +17,7 @@ function PasswordField({ label, value, onChange, show, onToggle }) {
           className="w-full px-3 py-2 pr-9 bg-input border border-app rounded-lg text-sm text-app outline-none focus:border-blue-500 transition"
         />
         <button type="button" onClick={onToggle}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 bg-transparent border-none cursor-pointer p-0">
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-app hover:text-secondary-app bg-transparent border-none cursor-pointer p-0">
           {show ? <EyeOff size={13} /> : <Eye size={13} />}
         </button>
       </div>
@@ -57,7 +57,7 @@ function ChangePasswordModal({ onClose }) {
 
   const Field = ({ label, value, onChange, show, onToggle }) => (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs text-gray-500">{label}</label>
+      <label className="text-xs text-muted-app">{label}</label>
       <div className="relative">
         <input
           type={show ? 'text' : 'password'}
@@ -66,7 +66,7 @@ function ChangePasswordModal({ onClose }) {
           className="w-full px-3 py-2 pr-9 bg-input border border-app rounded-lg text-sm text-app outline-none focus:border-blue-500 transition"
         />
         <button type="button" onClick={onToggle}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 bg-transparent border-none cursor-pointer p-0">
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-app hover:text-secondary-app bg-transparent border-none cursor-pointer p-0">
           {show ? <EyeOff size={13} /> : <Eye size={13} />}
         </button>
       </div>
@@ -81,7 +81,7 @@ function ChangePasswordModal({ onClose }) {
             <Shield size={14} className="text-blue-400" />
             <span className="font-semibold text-sm text-app">Change Password</span>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-app bg-transparent border-none cursor-pointer"><X size={15} /></button>
+          <button onClick={onClose} className="text-muted-app hover:text-app bg-transparent border-none cursor-pointer"><X size={15} /></button>
         </div>
 
         <div className="px-6 py-5 space-y-4">
@@ -92,7 +92,7 @@ function ChangePasswordModal({ onClose }) {
           <label className="flex items-center gap-2.5 cursor-pointer select-none">
             <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)}
               className="w-3.5 h-3.5 accent-blue-600 cursor-pointer" />
-            <span className="text-xs text-gray-400">I confirm that I want to change my password.</span>
+            <span className="text-xs text-secondary-app">I confirm that I want to change my password.</span>
           </label>
 
           {error   && <p className="text-xs text-red-400">{error}</p>}
@@ -101,7 +101,7 @@ function ChangePasswordModal({ onClose }) {
 
         <div className="flex justify-end gap-2 px-6 py-4 border-t border-app">
           <button onClick={onClose}
-            className="text-xs px-4 py-2 rounded-lg bg-hover border border-app text-gray-400 hover:opacity-80 transition cursor-pointer">
+            className="text-xs px-4 py-2 rounded-lg bg-hover border border-app text-secondary-app hover:opacity-80 transition cursor-pointer">
             Cancel
           </button>
           <button onClick={handleSubmit} disabled={saving || !agreed}
@@ -190,7 +190,7 @@ function VehicleImageManager() {
         <ImageIcon size={14} className="text-blue-400" />
         <div>
           <p className="text-sm font-medium text-app">Vehicle Photos</p>
-          <p className="text-xs text-gray-500">Upload a photo for each vehicle. Remove background before uploading for a cleaner look.</p>
+          <p className="text-xs text-muted-app">Upload a photo for each vehicle. Remove background before uploading for a cleaner look.</p>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-4">
@@ -206,12 +206,12 @@ function VehicleImageManager() {
             <div className="h-28 bg-black/30 flex items-center justify-center">
               {v.image
                 ? <img src={api.imageUrl(v.image)} alt={v.name} className="w-full h-full object-contain p-2" />
-                : <Truck size={32} className="text-gray-700" />}
+                : <Truck size={32} className="text-muted-app" />}
             </div>
             {/* Info */}
             <div className="px-3 py-2 flex-1">
               <p className="text-xs font-semibold text-app truncate">{v.name}</p>
-              <p className="text-[10px] text-gray-500">{v.plate} · {v.type}</p>
+              <p className="text-[10px] text-muted-app">{v.plate} · {v.type}</p>
             </div>
             {/* Upload buttons */}
             <div className="px-3 pb-3 flex flex-col gap-1.5">
@@ -247,7 +247,7 @@ function VehicleImageManager() {
                 type="button"
                 disabled={uploading === v._id}
                 onClick={() => fileRefs.current[`${v._id}-normal`]?.click()}
-                className="flex items-center justify-center gap-1.5 text-[10px] px-2 py-1.5 rounded-lg bg-hover border border-app text-gray-400 hover:text-app transition cursor-pointer disabled:opacity-50"
+                className="flex items-center justify-center gap-1.5 text-[10px] px-2 py-1.5 rounded-lg bg-hover border border-app text-secondary-app hover:text-app transition cursor-pointer disabled:opacity-50"
               >
                 <Upload size={10} /> Upload only
               </button>
@@ -255,14 +255,14 @@ function VehicleImageManager() {
           </div>
         ))}
         {vehicles.length === 0 && !loading && (
-            <p className="text-xs text-gray-500 col-span-2 text-center py-6">No vehicles found.</p>
+            <p className="text-xs text-muted-app col-span-2 text-center py-6">No vehicles found.</p>
           )}
         </div>
         )}
       </div>
       <div className="px-5 py-2.5 border-t border-app bg-input/20 flex items-center gap-1.5">
-        <Info size={11} className="text-gray-500 flex-shrink-0" />
-        <p className="text-[10px] text-gray-500">Remove BG requires a valid <span className="text-gray-400">VITE_REMOVE_BG_KEY</span> in your .env file.</p>
+        <Info size={11} className="text-muted-app flex-shrink-0" />
+        <p className="text-[10px] text-muted-app">Remove BG requires a valid <span className="text-secondary-app">VITE_REMOVE_BG_KEY</span> in your .env file.</p>
       </div>
     </div>
   );
@@ -316,7 +316,7 @@ function Settings({ onLogout }) {
               {isDark ? <Moon size={15} className="text-blue-400" /> : <Sun size={15} className="text-yellow-400" />}
               <div>
                 <p className="text-sm font-medium text-app">Dark Mode</p>
-                <p className="text-xs text-gray-500">{isDark ? 'Currently on dark mode' : 'Currently on light mode'}</p>
+                <p className="text-xs text-muted-app">{isDark ? 'Currently on dark mode' : 'Currently on light mode'}</p>
               </div>
             </div>
             <button type="button" onClick={() => setTheme(isDark ? 'light' : 'dark')}
@@ -335,7 +335,7 @@ function Settings({ onLogout }) {
               <KeyRound size={15} className="text-blue-400" />
               <div>
                 <p className="text-sm font-medium text-app">Password</p>
-                <p className="text-xs text-gray-500">Update your account password</p>
+                <p className="text-xs text-muted-app">Update your account password</p>
               </div>
             </div>
             <button onClick={() => setShowModal(true)}
@@ -351,7 +351,7 @@ function Settings({ onLogout }) {
                 <Truck size={14} className="text-blue-400" />
                 <div>
                   <p className="text-sm font-medium text-app">Freight Rate Schedule</p>
-                  <p className="text-xs text-gray-500">Rate per km and minimum charge per vehicle type</p>
+                  <p className="text-xs text-muted-app">Rate per km and minimum charge per vehicle type</p>
                 </div>
                 {ratesSaved && <span className="text-xs text-green-400 ml-1">Saved!</span>}
               </div>
@@ -360,7 +360,7 @@ function Settings({ onLogout }) {
                     <Pencil size={11} /> Edit Rates
                   </button>
                 : <div className="flex items-center gap-2">
-                    <button onClick={cancelEdit} className="text-xs px-3 py-1.5 rounded-lg bg-hover border border-app text-gray-400 cursor-pointer transition">Cancel</button>
+                    <button onClick={cancelEdit} className="text-xs px-3 py-1.5 rounded-lg bg-hover border border-app text-secondary-app cursor-pointer transition">Cancel</button>
                     <button onClick={saveRates} disabled={savingRates}
                       className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white border-none cursor-pointer transition disabled:opacity-50">
                       <Save size={11} /> {savingRates ? 'Saving...' : 'Save'}
@@ -370,7 +370,7 @@ function Settings({ onLogout }) {
             </div>
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-gray-500 border-b border-app">
+                <tr className="text-muted-app border-b border-app">
                   <th className="text-left px-5 py-2 font-medium">Vehicle</th>
                   <th className="text-left px-5 py-2 font-medium">Rate / km</th>
                   <th className="text-left px-5 py-2 font-medium">Min Charge</th>
@@ -385,22 +385,22 @@ function Settings({ onLogout }) {
                         ? <input type="number" min="1" value={draftRates.ratePerKm[v] ?? ''}
                             onChange={e => setDraftRates(d => ({ ...d, ratePerKm: { ...d.ratePerKm, [v]: e.target.value } }))}
                             className="w-24 bg-input border border-app rounded px-2 py-0.5 text-xs text-app outline-none focus:border-blue-500" />
-                        : <span className="text-gray-300">{fmt(ratePerKm[v])}</span>}
+                        : <span className="text-secondary-app">{fmt(ratePerKm[v])}</span>}
                     </td>
                     <td className="px-5 py-2.5">
                       {editRates
                         ? <input type="number" min="1" value={draftRates.minCharge[v] ?? ''}
                             onChange={e => setDraftRates(d => ({ ...d, minCharge: { ...d.minCharge, [v]: e.target.value } }))}
                             className="w-24 bg-input border border-app rounded px-2 py-0.5 text-xs text-app outline-none focus:border-blue-500" />
-                        : <span className="text-gray-300">{fmt(minCharge[v])}</span>}
+                        : <span className="text-secondary-app">{fmt(minCharge[v])}</span>}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
             <div className="px-5 py-2.5 border-t border-app bg-input/20 flex items-center gap-1.5">
-              <Info size={11} className="text-gray-500 flex-shrink-0" />
-              <p className="text-[10px] text-gray-500">Changes apply to all new invoices going forward.</p>
+              <Info size={11} className="text-muted-app flex-shrink-0" />
+              <p className="text-[10px] text-muted-app">Changes apply to all new invoices going forward.</p>
             </div>
           </div>
         </div>

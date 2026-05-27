@@ -27,7 +27,7 @@ function About() {
           </div>
           <div className="flex justify-between text-xs py-2">
             <span className="text-gray-500">EDI Standards</span>
-            <span className="text-app">ANSI X12 — 204, 990, 214, 210</span>
+            <span className="text-app">ANSI X12 — 204, 990, 214, 210, 820, 997</span>
           </div>
         </div>
       </div>
