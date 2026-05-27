@@ -44,8 +44,14 @@ async function removeStoredImage(image) {
   if (!image || typeof image !== 'string') return;
 
   if (image.startsWith('/uploads/')) {
-    const filePath = path.join(__dirname, '..', image);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    // On Vercel, /var/task is read-only. Old local-path entries may still exist in DB.
+    // Deletion failure should never block replacing the image with a Blob URL.
+    try {
+      const filePath = path.join(__dirname, '..', image);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    } catch (err) {
+      console.warn('Local file delete skipped (non-fatal):', err.message);
+    }
     return;
   }
 
