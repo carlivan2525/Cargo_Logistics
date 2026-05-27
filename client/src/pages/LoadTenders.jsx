@@ -65,7 +65,7 @@ function VehicleDropdown({ value, onChange, vehicles, loadWeight }) {
       >
         <span className="flex items-center gap-1.5">
           {selected?.image
-            ? <img src={selected.image} alt={selected.name} className="w-5 h-5 object-contain rounded" />
+            ? <img src={api.imageUrl(selected.image)} alt={selected.name} className="w-5 h-5 object-contain rounded" />
             : <Truck size={11} className="text-gray-500" />}
           {selected ? `${selected.name} · ${selected.plate}` : 'Assign vehicle...'}
         </span>

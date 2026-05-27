@@ -2,37 +2,61 @@ const express  = require('express');
 const path     = require('path');
 const fs       = require('fs');
 const multer   = require('multer');
+const { put, del } = require('@vercel/blob');
 const Vehicle  = require('../models/Vehicle');
 const auth     = require('../middleware/auth');
 
 const router = express.Router();
 
-// ── Multer storage config ─────────────────────────────────────────────────────
 const UPLOADS_DIR = path.join(__dirname, '..', 'uploads', 'vehicles');
 
-// Ensure the uploads directory exists at startup
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+function useBlobStorage() {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 }
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
-  filename: (req, file, cb) => {
-    // e.g. VH-001_1716800000000.png
-    const ext  = path.extname(file.originalname).toLowerCase() || '.png';
-    const name = `${req.params.id}_${Date.now()}${ext}`;
-    cb(null, name);
-  },
-});
+// Local disk: ensure directory exists
+if (!useBlobStorage()) {
+  if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  }
+}
+
+const maxBytes = useBlobStorage()
+  ? 4 * 1024 * 1024 // Vercel function body limit ~4.5 MB — stay under it
+  : 5 * 1024 * 1024;
 
 const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max
+  storage: multer.memoryStorage(),
+  limits: { fileSize: maxBytes },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith('image/')) return cb(null, true);
     cb(new Error('Only image files are allowed'));
   },
 });
+
+function isVercelBlobUrl(url) {
+  return typeof url === 'string'
+    && url.startsWith('https://')
+    && url.includes('blob.vercel-storage.com');
+}
+
+async function removeStoredImage(image) {
+  if (!image || typeof image !== 'string') return;
+
+  if (image.startsWith('/uploads/')) {
+    const filePath = path.join(__dirname, '..', image);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    return;
+  }
+
+  if (isVercelBlobUrl(image)) {
+    try {
+      await del(image, { token: process.env.BLOB_READ_WRITE_TOKEN });
+    } catch (err) {
+      console.warn('Blob delete failed (non-fatal):', err.message);
+    }
+  }
+}
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
@@ -69,22 +93,45 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // PUT upload vehicle image — multipart/form-data, field name: "image"
+// Stores a short HTTPS URL (Vercel Blob) when BLOB_READ_WRITE_TOKEN is set; otherwise /uploads/... on disk.
 router.put('/:id/image', auth, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'image file is required' });
 
+    if (process.env.VERCEL && !useBlobStorage()) {
+      return res.status(503).json({
+        message: 'Vehicle image uploads require Vercel Blob. Add BLOB_READ_WRITE_TOKEN in your Vercel project environment (Storage → Blob).',
+      });
+    }
+
     const vehicle = await Vehicle.findById(req.params.id);
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
 
-    // Delete the old image file if it was a local upload (not a Base64 string)
-    if (vehicle.image && vehicle.image.startsWith('/uploads/')) {
-      const oldPath = path.join(__dirname, '..', vehicle.image);
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    await removeStoredImage(vehicle.image);
+
+    const ext = path.extname(req.file.originalname).toLowerCase() || '.png';
+    let imageUrl;
+
+    if (useBlobStorage()) {
+      const pathname = `vehicles/${req.params.id}-${Date.now()}${ext}`;
+      const blob = await put(pathname, req.file.buffer, {
+        access: 'public',
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+        contentType: req.file.mimetype || 'image/png',
+        addRandomSuffix: true,
+      });
+      imageUrl = blob.url;
+    } else {
+      if (!fs.existsSync(UPLOADS_DIR)) {
+        fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+      }
+      const filename = `${req.params.id}_${Date.now()}${ext}`;
+      const diskPath = path.join(UPLOADS_DIR, filename);
+      fs.writeFileSync(diskPath, req.file.buffer);
+      imageUrl = `/uploads/vehicles/${filename}`;
     }
 
-    // Store the URL path (e.g. /uploads/vehicles/VH-001_1716800000000.png)
-    const imageUrl = `/uploads/vehicles/${req.file.filename}`;
-    const updated  = await Vehicle.findByIdAndUpdate(
+    const updated = await Vehicle.findByIdAndUpdate(
       req.params.id,
       { image: imageUrl },
       { new: true }

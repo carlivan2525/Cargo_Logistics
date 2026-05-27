@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/carlivan2525/Cargo_Logistics#readme",
   "dependencies": {
+    "@vercel/blob": "^2.4.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
