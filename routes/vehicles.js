@@ -22,7 +22,7 @@ if (!useBlobStorage()) {
 }
 
 const maxBytes = useBlobStorage()
-  ? 4 * 1024 * 1024 // Vercel function body limit ~4.5 MB — stay under it
+  ? 3 * 1024 * 1024 // Vercel function request limit is small; keep extra headroom
   : 5 * 1024 * 1024;
 
 const upload = multer({

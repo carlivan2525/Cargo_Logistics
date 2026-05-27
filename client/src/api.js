@@ -32,7 +32,17 @@ export const api = {
       headers: { Authorization: `Bearer ${getToken()}` }, // no Content-Type: let browser set multipart boundary
       body: formData,
     }).then(async res => {
-      const data = await res.json();
+      const contentType = res.headers.get('content-type') || '';
+      const isJson = contentType.includes('application/json');
+
+      let data;
+      if (isJson) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        data = { message: text || `Upload failed (${res.status})` };
+      }
+
       if (!res.ok) throw new Error(data.message || 'Upload failed');
       return data;
     });
