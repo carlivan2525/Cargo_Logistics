@@ -382,6 +382,7 @@ router.post('/:id/respond', auth, async (req, res) => {
         const shipmentId = existingShipment ? `${tender.shipmentId}-${Date.now()}` : tender.shipmentId;
         await new Shipment({
           shipmentId,
+          orderId:                tender.orderId || tender.shipmentId,
           route:                 tender.route,
           origin:                o.city || '',
           partner:               tender.partner,
@@ -394,6 +395,7 @@ router.post('/:id/respond', auth, async (req, res) => {
         existingShipment.vehicle = vehicleId;
         existingShipment.tender  = tender._id;
         existingShipment.estimatedDeliveryDate = estDelivery;
+        if (!existingShipment.orderId) existingShipment.orderId = tender.orderId || tender.shipmentId;
         await existingShipment.save();
       }
     } else if (status === 'Rejected') {

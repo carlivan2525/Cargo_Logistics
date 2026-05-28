@@ -94,6 +94,10 @@ router.put('/:id/status', auth, async (req, res) => {
         const parts = shipment.route.split('-');
         location = parts.length > 1 ? parts[parts.length - 1].trim() : shipment.route.trim();
       }
+      // Persist orderId onto the shipment when available (from tender)
+      if (!shipment.orderId && tenderOrderId) {
+        shipment.orderId = tenderOrderId;
+      }
 
       // POST 214 to partner's system
       const partner = await Partner.findById(shipment.partner);
@@ -148,7 +152,7 @@ router.put('/:id/status', auth, async (req, res) => {
           const body = webhookUrl === SURPLUS_VENDOR_URL
             ? JSON.stringify({
                 transactionSetCode:    '214',
-                orderId:               tenderOrderId || shipment.transactionId || shipment.shipmentId,
+                orderId:               tenderOrderId || shipment.orderId || shipment.transactionId || shipment.shipmentId,
                 status:                mappedStatus,
                 location,
                 description:           DESCRIPTION_MAP[status] || '',
@@ -159,7 +163,7 @@ router.put('/:id/status', auth, async (req, res) => {
               })
             : webhookUrl === HIRAYA_VENDOR_URL
             ? JSON.stringify({
-                orderId:               tenderOrderId || shipment.transactionId || shipment.shipmentId,
+                orderId:               tenderOrderId || shipment.orderId || shipment.transactionId || shipment.shipmentId,
                 status:                mappedStatus,
                 location,
                 description:           DESCRIPTION_MAP[status] || '',

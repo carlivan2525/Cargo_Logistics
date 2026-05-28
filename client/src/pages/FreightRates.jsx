@@ -243,6 +243,11 @@ function FreightRates() {
   const fmt = n => '₱' + Number(n || 0).toLocaleString('en-PH');
 
   const PH_CENTER = [12.8797, 121.7740];
+  // Philippines bounding box (approx). Constrains panning to PH only.
+  const PH_BOUNDS = [
+    [4.5, 116.8],   // SW (near Sabah/Sulu Sea)
+    [21.4, 127.1],  // NE (north of Luzon / Philippine Sea)
+  ];
 
   return (
     <div className="flex gap-4 h-full" style={{ minHeight: '500px' }}>
@@ -327,6 +332,9 @@ function FreightRates() {
             zoom={6}
             style={{ height: '100%', width: '100%', minHeight: '400px' }}
             scrollWheelZoom={true}
+            minZoom={5}
+            maxBounds={PH_BOUNDS}
+            maxBoundsViscosity={1.0}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const shipmentSchema = new mongoose.Schema({
   shipmentId:    { type: String, required: true, unique: true },
+  orderId:       { type: String, default: null, index: true },
   transactionId: { type: String, default: null },
   route:      { type: String, required: true },
   origin:     { type: String },

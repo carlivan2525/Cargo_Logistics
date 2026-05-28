@@ -303,7 +303,7 @@ function ShipmentsTable() {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search shipment ID..."
+            placeholder="Search shipment / order ID..."
             className="text-xs px-3 py-1.5 rounded-lg bg-input border border-app text-app placeholder:text-muted-app focus:outline-none focus:border-blue-500 w-44"
           />
         </div>
@@ -311,7 +311,7 @@ function ShipmentsTable() {
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-card">
               <tr className="text-muted-app text-xs border-b border-app">
-                <th className="text-left px-5 py-2.5 font-medium">Shipment ID</th>
+                <th className="text-left px-5 py-2.5 font-medium">Shipment ID / Order ID</th>
                 <th className="text-left px-5 py-2.5 font-medium">Date</th>
                 <th className="text-left px-5 py-2.5 font-medium">Route</th>
                 <th className="text-left px-5 py-2.5 font-medium">Est. Delivery</th>
@@ -325,11 +325,17 @@ function ShipmentsTable() {
               {shipments.length === 0 && (
                 <tr><td colSpan={8} className="text-center py-10 text-muted-app text-sm">No shipments yet.</td></tr>
               )}
-              {shipments.filter(s =>
-                !search.trim() || (s.shipmentId ?? '').toLowerCase().includes(search.trim().toLowerCase())
-              ).map(s => (
+              {shipments.filter(s => {
+                const q = search.trim().toLowerCase();
+                if (!q) return true;
+                return (s.shipmentId ?? '').toLowerCase().includes(q)
+                  || (s.orderId ?? '').toLowerCase().includes(q);
+              }).map(s => (
                 <tr key={s._id} className="border-b border-subtle hover:bg-hover transition">
-                  <td className="px-5 py-3.5 font-mono text-xs text-secondary-app">{s.shipmentId}</td>
+                  <td className="px-5 py-3.5 font-mono text-xs text-secondary-app whitespace-nowrap">
+                    <p>{s.shipmentId}</p>
+                    {s.orderId && <p className="text-muted-app mt-0.5">{s.orderId}</p>}
+                  </td>
                   <td className="px-5 py-3.5 text-xs text-muted-app">
                     {s.createdAt ? new Date(s.createdAt).toLocaleDateString('en-PH', { month: '2-digit', day: '2-digit', year: 'numeric' }) : '—'}
                   </td>

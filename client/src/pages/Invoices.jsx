@@ -187,9 +187,11 @@ function Invoices() {
   };
 
   const filtered = invoices.filter(inv => {
-    const matchSearch =
-      inv.invoiceId?.toLowerCase().includes(search.toLowerCase()) ||
-      inv.partner?.name?.toLowerCase().includes(search.toLowerCase());
+    const q = search.trim().toLowerCase();
+    const matchSearch = !q
+      || inv.invoiceId?.toLowerCase().includes(q)
+      || inv.shipment?.shipmentId?.toLowerCase().includes(q)
+      || inv.partner?.name?.toLowerCase().includes(q);
     const matchStatus = filterStatus === 'All' || inv.status === filterStatus;
     return matchSearch && matchStatus;
   });
@@ -241,7 +243,7 @@ function Invoices() {
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 bg-input border border-app rounded-lg px-3 py-1.5">
               <Search size={12} className="text-muted-app" />
-              <input type="text" placeholder="Search invoices..." value={search}
+              <input type="text" placeholder="Search invoice / shipment ID..." value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="bg-transparent text-xs text-secondary-app placeholder:text-muted-app outline-none w-36" />
             </div>
