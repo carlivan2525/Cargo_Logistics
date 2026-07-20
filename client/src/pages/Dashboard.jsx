@@ -73,23 +73,15 @@ const SLUG_TO_LABEL = {
 const LABEL_TO_SLUG = Object.fromEntries(Object.entries(SLUG_TO_LABEL).map(([k,v]) => [v, k]));
 
 function LogoutButton({ onLogout }) {
-  const [loading, setLoading] = useState(false);
-  const handle = () => {
-    setLoading(true);
-    setTimeout(() => { setLoading(false); onLogout(); }, 3000);
-  };
   return (
     <button
-      onClick={handle}
-      disabled={loading}
+      onClick={onLogout}
       title="Logout"
-      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition cursor-pointer border-none text-red-200 hover:bg-sidebar-hover hover:text-red-100 disabled:opacity-70"
+      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition cursor-pointer border-none text-red-200 hover:bg-sidebar-hover hover:text-red-100"
     >
-      {loading
-        ? <span className="w-4 h-4 border-2 border-red-200 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-        : <LogOut size={15} className="flex-shrink-0" />}
+      <LogOut size={15} className="flex-shrink-0" />
       <span className="whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
-        {loading ? 'Logging out...' : 'Logout'}
+        Logout
       </span>
     </button>
   );
