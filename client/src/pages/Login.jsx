@@ -50,6 +50,7 @@ function Login({ onLogin }) {
   const [loadingState, setLoadingState] = useState(null);
   const [activeSection, setActiveSection] = useState('hero');
   const [loginHighlight, setLoginHighlight] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const highlightTimer = useRef(null);
 
   // Track which section is in view using scroll position
@@ -59,6 +60,7 @@ function Login({ onLogin }) {
 
     const getActiveSection = () => {
       const scrollY = window.scrollY + 120; // offset for fixed header
+      setScrolled(window.scrollY > 60);
       // Go from bottom to top — first one whose offsetTop <= scrollY wins
       let current = 'hero';
       for (let i = sectionIds.length - 1; i >= 0; i--) {
@@ -112,9 +114,9 @@ function Login({ onLogin }) {
       <div className="fixed inset-0 bg-black/70 pointer-events-none z-0" />
 
       {/* ── HEADER ── */}
-      <header className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-4">
+      <header className={`fixed top-0 left-0 right-0 z-50 flex justify-center px-4 transition-all duration-300 ${scrolled ? 'pt-3' : 'pt-5'}`}>
         <div
-          className="w-full max-w-5xl flex items-center justify-between px-5 py-3 rounded-2xl"
+          className={`w-full max-w-5xl flex items-center justify-between rounded-2xl transition-all duration-300 ${scrolled ? 'px-5 py-2' : 'px-6 py-4'}`}
           style={{
             background: 'rgba(255, 255, 255, 0.07)',
             backdropFilter: 'blur(24px)',
@@ -125,8 +127,8 @@ function Login({ onLogin }) {
         >
           {/* Logo */}
           <div className="flex items-center gap-2.5">
-            <img src="/CarGO-logo.png" alt="CarGO Logo" className="h-8 w-auto" />
-            <span className="text-white text-lg leading-none" style={rajdhani}>CarGO</span>
+            <img src="/CarGO-logo.png" alt="CarGO Logo" className={`w-auto transition-all duration-300 ${scrolled ? 'h-7' : 'h-9'}`} />
+            <span className={`text-white leading-none transition-all duration-300 ${scrolled ? 'text-base' : 'text-xl'}`} style={rajdhani}>CarGO</span>
           </div>
 
           {/* Nav */}
@@ -337,8 +339,8 @@ function Login({ onLogin }) {
       {/* ── ABOUT ── */}
       <section
         id="about"
-        className="relative z-10 w-full py-20 px-6"
-        style={{ scrollMarginTop: '80px' }}
+        className="relative z-10 w-full py-40 px-6"
+        style={{ scrollMarginTop: '100px', minHeight: '100vh' }}
       >
         <div className="max-w-5xl mx-auto flex flex-col lg:flex-row items-center gap-12">
           <div className="flex-1 text-left">
