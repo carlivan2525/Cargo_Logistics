@@ -299,7 +299,7 @@ function Login({ onLogin }) {
       <section
         id="services"
         className="relative z-10 w-full py-20 px-6"
-        style={{ background: 'rgba(0,0,0,0.35)', borderTop: '1px solid rgba(255,255,255,0.06)', scrollMarginTop: '80px' }}
+        style={{ background: '#1a1d2a', borderTop: '1px solid rgba(255,255,255,0.06)', scrollMarginTop: '80px' }}
       >
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
@@ -340,7 +340,7 @@ function Login({ onLogin }) {
       <section
         id="about"
         className="relative z-10 w-full py-40 px-6"
-        style={{ scrollMarginTop: '100px', minHeight: '100vh' }}
+        style={{ background: '#0f1117', borderTop: '1px solid rgba(255,255,255,0.06)', scrollMarginTop: '100px', minHeight: '100vh' }}
       >
         <div className="max-w-5xl mx-auto flex flex-col lg:flex-row items-center gap-12">
           <div className="flex-1 text-left">
@@ -382,7 +382,7 @@ function Login({ onLogin }) {
       <footer
         className="relative z-10 w-full py-8 px-6"
         style={{
-          background: 'rgba(0,0,0,0.45)',
+          background: '#1a1d2a',
           borderTop: '1px solid rgba(255,255,255,0.07)',
         }}
       >
