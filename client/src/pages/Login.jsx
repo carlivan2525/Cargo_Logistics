@@ -339,10 +339,10 @@ function Login({ onLogin }) {
       {/* ── ABOUT ── */}
       <section
         id="about"
-        className="relative z-10 w-full py-40 px-6"
-        style={{ background: '#0f1117', borderTop: '1px solid rgba(255,255,255,0.06)', scrollMarginTop: '100px', minHeight: '100vh' }}
+        className="relative z-10 w-full px-6 flex items-center justify-center"
+        style={{ background: '#0f1117', borderTop: '1px solid rgba(255,255,255,0.06)', scrollMarginTop: '80px', minHeight: '100vh' }}
       >
-        <div className="max-w-5xl mx-auto flex flex-col lg:flex-row items-center gap-12">
+        <div className="max-w-5xl w-full mx-auto flex flex-col lg:flex-row items-center gap-12 py-20">
           <div className="flex-1 text-left">
             <p className="text-xs uppercase tracking-widest text-blue-400 font-medium mb-2">About the Platform</p>
             <h2 className="text-3xl font-bold text-white mb-4" style={rajdhani}>Built for Real-World Logistics</h2>
